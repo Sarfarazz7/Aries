@@ -23,8 +23,116 @@
 --blumid:#58a6ff;--grnmid:#3fb950;--purmid:#bc8cff;--telmid:#2dd4bf;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;transition:background .3s var(--ease),color .3s var(--ease)}
-.H{display:none!important}
+/* ── JOURNAL ── */
+.journal-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - var(--nav-h) - 80px);min-height:500px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.journal-sidebar{background:var(--sf2);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.journal-sidebar-head{padding:16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.journal-sidebar-title{font-size:13px;font-weight:700;color:var(--tx);letter-spacing:-.2px}
+.btn-new-journal{height:32px;padding:0 14px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-new-journal:hover{background:var(--ph);transform:scale(1.03)}
+.btn-new-journal:active{transform:scale(.97)}
+.journal-search{padding:10px 14px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.journal-search input{width:100%;height:32px;padding:0 10px 0 30px;border:1.5px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color .18s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:8px center;background-size:14px}
+.journal-search input:focus{border-color:var(--p)}
+.journal-list{flex:1;overflow-y:auto;padding:8px}
+.journal-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 20px;text-align:center;color:var(--tx3)}
+.journal-empty-state .je-icon{font-size:40px;opacity:.4}
+.journal-empty-state .je-txt{font-size:12px;line-height:1.5}
+.journal-card{padding:12px 14px;border-radius:10px;cursor:pointer;transition:all .18s var(--ease);margin-bottom:4px;border:1px solid transparent;animation:fadeUp .2s var(--ease) both;position:relative}
+.journal-card:hover{background:var(--sf);border-color:var(--bd)}
+.journal-card.active{background:var(--sf);border-color:var(--p);box-shadow:0 0 0 1px var(--p)}
+.jc-date{font-size:10px;color:var(--tx3);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.jc-mood{font-size:12px}
+.jc-title{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jc-preview{font-size:11px;color:var(--tx3);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.jc-del{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--tx3);cursor:pointer;font-size:15px;opacity:0;transition:all .18s;line-height:1;padding:2px}
+.journal-card:hover .jc-del{opacity:1}
+.jc-del:hover{color:var(--red);transform:scale(1.2)}
+.journal-editor{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.journal-editor-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex:1;color:var(--tx3);padding:40px}
+.je-big-icon{font-size:60px;opacity:.15}
+.je-hint{font-size:13px;line-height:1.6;text-align:center;max-width:280px}
+.journal-editor-form{display:flex;flex-direction:column;flex:1;overflow:hidden;animation:fadeIn .25s var(--ease)}
+.jef-toolbar{padding:14px 20px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.jef-mood-wrap{display:flex;align-items:center;gap:6px}
+.jef-mood-lbl{font-size:11px;color:var(--tx3)}
+.mood-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.mood-btn:hover{border-color:var(--bd2);transform:scale(1.1)}
+.mood-btn.sel{border-color:var(--p);background:var(--pl);transform:scale(1.1)}
+.jef-tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tag-chip{padding:3px 9px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx3);transition:all .18s}
+.tag-chip:hover{border-color:var(--bd2);color:var(--tx)}
+.tag-chip.sel{background:var(--pl);border-color:var(--p);color:var(--p)}
+.jef-meta{padding:0 20px;margin-top:10px;flex-shrink:0}
+.jef-date-lbl{font-size:11px;color:var(--tx3);margin-bottom:6px}
+.jef-title-inp{width:100%;border:none;background:transparent;color:var(--tx);font-size:22px;font-weight:700;font-family:inherit;outline:none;letter-spacing:-.3px;padding:0;line-height:1.3}
+.jef-title-inp::placeholder{color:var(--tx3)}
+.jef-divider{height:1px;background:var(--bd);margin:10px 20px;flex-shrink:0}
+.jef-body{flex:1;overflow-y:auto;padding:0 20px 20px}
+.jef-body-inp{width:100%;min-height:320px;border:none;background:transparent;color:var(--tx);font-size:14px;font-family:Georgia,'Times New Roman',serif;line-height:1.85;resize:none;outline:none;padding:0}
+.jef-body-inp::placeholder{color:var(--tx3)}
+.jef-footer{padding:12px 20px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.jef-word-count{font-size:11px;color:var(--tx3);margin-right:auto}
+.btn-save-journal{height:34px;padding:0 20px;background:var(--p);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s}
+.btn-save-journal:hover{background:var(--ph)}
+.btn-save-journal:active{transform:scale(.97)}
+.btn-discard{height:34px;padding:0 16px;background:var(--sf2);color:var(--tx2);border:1.5px solid var(--bd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s}
+.btn-discard:hover{border-color:var(--bd2);color:var(--tx)}
+/* Book view */
+.journal-book-view{animation:fadeUp .3s var(--ease);overflow-y:auto;flex:1}
+.journal-book-view .jbv-head{padding:20px 28px 0;display:flex;align-items:flex-start;gap:14px}
+.jbv-back{width:32px;height:32px;border:1.5px solid var(--bd);border-radius:8px;background:var(--sf2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tx2);font-size:16px;transition:all .18s;flex-shrink:0}
+.jbv-back:hover{border-color:var(--bd2);color:var(--tx);transform:scale(1.05)}
+.jbv-meta{flex:1}
+.jbv-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.jbv-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--pl);color:var(--p);border:1px solid var(--p)}
+.jbv-date{font-size:11px;color:var(--tx3);margin-bottom:2px}
+.jbv-actions{display:flex;gap:6px}
+.jbv-edit-btn{height:30px;padding:0 14px;background:var(--sf2);color:var(--tx2);border:1.5px solid var(--bd);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s}
+.jbv-edit-btn:hover{border-color:var(--bd2);color:var(--tx)}
+.journal-book-page{margin:20px 28px 28px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:36px 44px;box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04),inset 0 0 0 1px rgba(255,255,255,.05);position:relative;overflow:hidden}
+.journal-book-page::before{content:'';position:absolute;left:68px;top:0;bottom:0;width:1px;background:rgba(220,180,180,.3);pointer-events:none}
+.dk .journal-book-page::before{background:rgba(180,120,120,.15)}
+.jbp-mood{font-size:28px;margin-bottom:12px}
+.jbp-title{font-size:26px;font-weight:800;color:var(--tx);letter-spacing:-.5px;line-height:1.25;margin-bottom:20px;padding-left:28px}
+.jbp-body{font-size:15px;font-family:Georgia,'Times New Roman',serif;color:var(--tx);line-height:2;white-space:pre-wrap;word-break:break-word;padding-left:28px}
+.jbp-body p{margin-bottom:1em}
+.jbp-footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--tx3);padding-left:28px}
+#pgJournal{padding-bottom:0;gap:10px}
+.jstat{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--tx3);display:flex;align-items:center;gap:5px}
+.jstat strong{color:var(--tx);font-size:13px}
+/* Journal sidebar mini-stats */
+.journal-mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-bottom:1px solid var(--bd);background:var(--bd)}
+.jms{background:var(--sf2);padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.jms-val{font-size:16px;font-weight:800;color:var(--tx)}
+.jms-lbl{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+/* Journal tabs */
+.journal-tabs{display:flex;border-bottom:1px solid var(--bd)}
+.jtab{flex:1;padding:9px 8px;font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;text-align:center;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s}
+.jtab:hover{color:var(--tx);background:var(--sf)}
+.jtab.on{color:var(--p);border-color:var(--p);background:var(--sf)}
+/* Journal analytics panel */
+.jan-wrap{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.jan-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.jan-kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:14px 10px;text-align:center;transition:transform .18s,box-shadow .18s;animation:fadeUp .3s var(--ease) both}
+.jan-kpi:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.09)}
+.jan-kpi-icon{font-size:20px;margin-bottom:4px}
+.jan-kpi-val{font-size:20px;font-weight:800;color:var(--tx);animation:countUp .4s var(--ease)}
+.jan-kpi-lbl{font-size:10px;color:var(--tx3);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+.jan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.jan-card{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;animation:fadeUp .4s var(--ease) both;transition:border-color .18s}
+.jan-card:hover{border-color:var(--bd2)}
+.jan-wide{grid-column:span 2}
+.jan-card-head{margin-bottom:12px}
+.jan-card-title{font-size:12px;font-weight:700;color:var(--tx)}
+.jan-card-sub{font-size:10px;color:var(--tx3);margin-top:2px}
+.jan-mood-list{display:flex;flex-direction:column;gap:7px}
+.jan-mood-row{display:flex;align-items:center;gap:8px}
+.jan-sent-legend{display:flex;justify-content:center;gap:10px;font-size:10px;margin-top:8px;flex-wrap:wrap;color:var(--tx3)}
+.jan-tag-bars{display:flex;flex-direction:column;gap:0}
+.jan-insights{display:flex;flex-direction:column;gap:7px}
 @keyframes spin{to{transform:rotate(360deg)}}
+.H{display:none!important}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
@@ -354,7 +462,7 @@ td:hover .tip{opacity:1}
   <nav class="navbar">
     <div class="nb-logo">
       <div class="nb-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
-      <span class="nb-name">Aries</span>
+      <span class="nb-name">Discipline Pro</span>
     </div>
     <div class="nb-nav">
       <button class="nb-btn on" data-pg="dashboard">
@@ -364,6 +472,10 @@ td:hover .tip{opacity:1}
       <button class="nb-btn" data-pg="finance">
         <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
         Finance
+      </button>
+      <button class="nb-btn" data-pg="journal">
+        <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5v16z"/></svg>
+        Journal
       </button>
       <button class="nb-btn" data-pg="profile">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -740,6 +852,7 @@ td:hover .tip{opacity:1}
       </div>
     </div>
   </div>
+  <div id="pgJournal" class="page H"></div>
   <div id="pgProfile" class="page H">
     <div class="profile-card">
       <div class="p-av" id="pAv">?</div>
@@ -812,7 +925,7 @@ function initUser(em){
       {id:uid(),name:'No social media AM',cat:'other'},
       {id:uid(),name:'Meditate 10 min',cat:'health'},
     ],done:{},notes:{},skipped:{},
-    transactions:[]
+    transactions:[],journals:[]
   };
 }
 function applyDark(){
@@ -863,13 +976,17 @@ document.querySelectorAll('.nb-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.nb-btn').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
-    ['pgDashboard','pgFinance','pgProfile'].forEach(id=>document.getElementById(id).classList.add('H'));
+    ['pgDashboard','pgFinance','pgJournal','pgProfile'].forEach(id=>document.getElementById(id).classList.add('H'));
     const pg=btn.dataset.pg;
     if(pg==='dashboard'){
       document.getElementById('pgDashboard').classList.remove('H');
     } else if(pg==='finance'){
       document.getElementById('pgFinance').classList.remove('H');
       setTimeout(()=>renderFinOverview(),100);
+    } else if(pg==='journal'){
+      document.getElementById('pgJournal').classList.remove('H');
+      jState={mode:'list',editId:null,selMood:null,selTags:[],searchQ:''};
+      renderJournalPage();
     } else {
       document.getElementById('pgProfile').classList.remove('H');
       renderProfile();
@@ -1908,6 +2025,549 @@ function renderWeeklyReview(){
     </div>`;
   }).join('');
 }
+// ══════════════════════════════════════════
+// JOURNAL MODULE
+// ══════════════════════════════════════════
+const MOODS=[{e:'😊',l:'Happy',score:5},{e:'😌',l:'Calm',score:4},{e:'🔥',l:'Motivated',score:5},{e:'😔',l:'Sad',score:1},{e:'😤',l:'Frustrated',score:2},{e:'😴',l:'Tired',score:2},{e:'🤔',l:'Reflective',score:3},{e:'🎉',l:'Excited',score:5}];
+const TAGS=['Gratitude','Work','Personal','Goals','Health','Travel','Learning','Idea'];
+const MOOD_COLORS={'😊':'#4caf50','😌':'#2196f3','🔥':'#ff5722','😔':'#9e9e9e','😤':'#f44336','😴':'#7986cb','🤔':'#ff9800','🎉':'#e91e63'};
+let jState={mode:'list',tab:'entries',editId:null,selMood:null,selTags:[],searchQ:''};
+
+function getJournals(){
+  const u=usr();if(!u)return[];
+  if(!u.journals)u.journals=[];
+  return u.journals;
+}
+
+// ── Sentiment: simple keyword scoring ──
+function sentimentScore(text){
+  const pos=['happy','great','amazing','good','love','grateful','excited','proud','wonderful','fantastic','joy','blessed','achieve','win','success','positive','better','best','improve','hope'];
+  const neg=['sad','bad','terrible','awful','hate','angry','frustrated','fail','lost','stress','anxious','depressed','horrible','worst','struggle','hard','difficult','pain','tired','overwhelmed'];
+  const words=(text||'').toLowerCase().split(/\W+/);
+  let s=0;
+  words.forEach(w=>{if(pos.includes(w))s++;if(neg.includes(w))s--;});
+  if(s>2)return{label:'Positive',color:'#4caf50',icon:'😊',val:s};
+  if(s<-1)return{label:'Negative',color:'#ef4444',icon:'😔',val:s};
+  return{label:'Neutral',color:'#f59e0b',icon:'😐',val:s};
+}
+
+function renderJournalPage(){
+  const pg=document.getElementById('pgJournal');
+  pg.innerHTML='';
+  const journals=getJournals();
+
+  const layout=document.createElement('div');
+  layout.className='journal-layout';
+
+  // ── Sidebar ──
+  const sidebar=document.createElement('div');
+  sidebar.className='journal-sidebar';
+
+  // Writing streak
+  let streak=0;
+  const td=today();
+  for(let i=0;i<365;i++){
+    const d=dStr(addD(new Date(),-i));
+    if(journals.some(j=>j.date===d))streak++;
+    else if(i>0)break;
+  }
+  const totalWords=journals.reduce((s,j)=>s+(j.body||'').split(/\s+/).filter(Boolean).length,0);
+  const thisMonth=journals.filter(j=>{const d=new Date(j.date+'T12:00:00'),n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
+
+  sidebar.innerHTML=`
+    <div class="journal-sidebar-head">
+      <span class="journal-sidebar-title">📔 My Journal</span>
+      <button class="btn-new-journal" id="jNewBtn">✦ New Entry</button>
+    </div>
+    <div class="journal-mini-stats">
+      <div class="jms"><span class="jms-val">${journals.length}</span><span class="jms-lbl">Entries</span></div>
+      <div class="jms"><span class="jms-val">${streak}</span><span class="jms-lbl">🔥 Streak</span></div>
+      <div class="jms"><span class="jms-val">${thisMonth}</span><span class="jms-lbl">This month</span></div>
+      <div class="jms"><span class="jms-val">${totalWords>999?(totalWords/1000).toFixed(1)+'k':totalWords}</span><span class="jms-lbl">Words</span></div>
+    </div>
+    <div class="journal-tabs">
+      <div class="jtab ${jState.tab==='entries'?'on':''}" data-jtab="entries">📋 Entries</div>
+      <div class="jtab ${jState.tab==='analytics'?'on':''}" data-jtab="analytics">📊 Analytics</div>
+    </div>
+    <div class="journal-search" id="jSearchWrap" style="${jState.tab!=='entries'?'display:none':''}">
+      <input id="jSearchInp" placeholder="Search entries…" value="${jState.searchQ}"/>
+    </div>
+    <div class="journal-list" id="jList"></div>
+  `;
+
+  // ── Main area ──
+  const editorWrap=document.createElement('div');
+  editorWrap.className='journal-editor';
+  editorWrap.id='jEditorWrap';
+
+  layout.appendChild(sidebar);
+  layout.appendChild(editorWrap);
+  pg.appendChild(layout);
+
+  if(jState.tab==='entries'){
+    renderJournalList();
+    if(jState.mode==='new'||jState.mode==='edit') renderJournalEditor(editorWrap);
+    else if(jState.mode==='view'&&jState.editId){
+      const entry=getJournals().find(j=>j.id===jState.editId);
+      if(entry)renderJournalBookView(editorWrap,entry);
+      else renderJournalEditorEmpty(editorWrap);
+    } else renderJournalEditorEmpty(editorWrap);
+  } else {
+    renderJournalAnalytics(editorWrap);
+    // Show 90-day heatmap in sidebar list area
+    renderJournalHeatmap(document.getElementById('jList'));
+  }
+
+  // Tab switching
+  sidebar.querySelectorAll('.jtab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      jState.tab=tab.dataset.jtab;
+      if(jState.tab==='analytics')jState.mode='list';
+      renderJournalPage();
+    });
+  });
+
+  document.getElementById('jNewBtn').addEventListener('click',()=>{
+    jState.mode='new';jState.tab='entries';jState.editId=null;jState.selMood=null;jState.selTags=[];
+    renderJournalPage();
+    setTimeout(()=>{const t=document.getElementById('jTitleInp');if(t)t.focus();},80);
+  });
+
+  const si=document.getElementById('jSearchInp');
+  if(si) si.addEventListener('input',e=>{jState.searchQ=e.target.value;renderJournalList();});
+}
+
+function renderJournalHeatmap(wrap){
+  if(!wrap)return;
+  const journals=getJournals();
+  wrap.innerHTML='<div style="padding:10px 12px 4px;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">90-Day Activity</div>';
+  const grid=document.createElement('div');
+  grid.style.cssText='display:flex;flex-wrap:wrap;gap:3px;padding:0 12px 12px';
+  for(let i=89;i>=0;i--){
+    const d=dStr(addD(new Date(),-i));
+    const hasEntry=journals.some(j=>j.date===d);
+    const entry=journals.find(j=>j.date===d);
+    const sq=document.createElement('div');
+    sq.style.cssText=`width:11px;height:11px;border-radius:2px;background:${hasEntry?'var(--p)':'var(--bd)'};opacity:${hasEntry?1:.5};cursor:${hasEntry?'pointer':'default'};transition:transform .15s,opacity .15s`;
+    sq.title=d+(entry?' — '+entry.title:'');
+    if(hasEntry) sq.addEventListener('click',()=>{jState.tab='entries';jState.mode='view';jState.editId=entry.id;renderJournalPage();});
+    sq.addEventListener('mouseenter',()=>{if(hasEntry)sq.style.transform='scale(1.5)';});
+    sq.addEventListener('mouseleave',()=>{sq.style.transform='';});
+    grid.appendChild(sq);
+  }
+  wrap.appendChild(grid);
+}
+
+function renderJournalAnalytics(wrap){
+  const journals=getJournals();
+  if(journals.length===0){
+    wrap.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;color:var(--tx3);padding:40px;text-align:center">
+      <div style="font-size:50px;opacity:.15">📊</div>
+      <div style="font-size:13px">Write at least one journal entry to see analytics.</div>
+    </div>`;
+    return;
+  }
+
+  // ── Compute analytics data ──
+  const moodMap={};
+  const tagMap={};
+  const sentMap={Positive:0,Neutral:0,Negative:0};
+  const last30=[];
+  const now=new Date();
+
+  journals.forEach(j=>{
+    if(j.mood)moodMap[j.mood]=(moodMap[j.mood]||0)+1;
+    (j.tags||[]).forEach(t=>tagMap[t]=(tagMap[t]||0)+1);
+    const s=sentimentScore(j.body||'');
+    sentMap[s.label]++;
+    const daysAgo=Math.floor((now-new Date(j.date+'T12:00:00'))/864e5);
+    if(daysAgo<30)last30.push(j);
+  });
+
+  // Word count per day last 30 days
+  const dayLabels=[];const wordCounts=[];const moodScores=[];
+  for(let i=29;i>=0;i--){
+    const d=dStr(addD(new Date(),-i));
+    const dayEntries=journals.filter(j=>j.date===d);
+    const wc=dayEntries.reduce((s,j)=>s+(j.body||'').split(/\s+/).filter(Boolean).length,0);
+    const avgMood=dayEntries.length?dayEntries.reduce((s,j)=>{const m=MOODS.find(x=>x.e===j.mood);return s+(m?m.score:3);},0)/dayEntries.length:null;
+    const d2=new Date(d+'T12:00:00');
+    dayLabels.push(d2.getDate()+'/'+( d2.getMonth()+1));
+    wordCounts.push(wc);
+    moodScores.push(avgMood);
+  }
+
+  // Streak history
+  let streak=0,maxStreak=0,curStreak=0;
+  for(let i=0;i<365;i++){
+    const d=dStr(addD(new Date(),-i));
+    if(journals.some(j=>j.date===d)){curStreak++;if(curStreak>maxStreak)maxStreak=curStreak;}
+    else{if(i===0)curStreak=0;else{maxStreak=Math.max(maxStreak,curStreak);curStreak=0;}}
+  }
+  streak=journals.some(j=>j.date===today())?curStreak:0;
+
+  // Best writing day of week
+  const dowCount=[0,0,0,0,0,0,0];
+  journals.forEach(j=>{dowCount[new Date(j.date+'T12:00:00').getDay()]++;});
+  const bestDow=WD[dowCount.indexOf(Math.max(...dowCount))];
+
+  // Avg words per entry
+  const avgWords=journals.length?Math.round(journals.reduce((s,j)=>s+(j.body||'').split(/\s+/).filter(Boolean).length,0)/journals.length):0;
+
+  // Top tags
+  const topTags=Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  // Top moods
+  const topMoods=Object.entries(moodMap).sort((a,b)=>b[1]-a[1]);
+  const totalMoodEntries=topMoods.reduce((s,[,v])=>s+v,0);
+
+  // ── Render ──
+  const dk=S.dark;
+  const gc=dk?'rgba(255,255,255,.05)':'rgba(0,0,0,.04)';
+  const tc=dk?'#555e72':'#9ea3b5';
+
+  wrap.innerHTML=`
+    <div class="jan-wrap">
+      <!-- KPI row -->
+      <div class="jan-kpi-row">
+        <div class="jan-kpi"><div class="jan-kpi-icon">🔥</div><div class="jan-kpi-val">${streak}</div><div class="jan-kpi-lbl">Day streak</div></div>
+        <div class="jan-kpi"><div class="jan-kpi-icon">🏆</div><div class="jan-kpi-val">${maxStreak}</div><div class="jan-kpi-lbl">Best streak</div></div>
+        <div class="jan-kpi"><div class="jan-kpi-icon">✍️</div><div class="jan-kpi-val">${avgWords}</div><div class="jan-kpi-lbl">Avg words/entry</div></div>
+        <div class="jan-kpi"><div class="jan-kpi-icon">📅</div><div class="jan-kpi-val">${bestDow}</div><div class="jan-kpi-lbl">Best writing day</div></div>
+      </div>
+
+      <div class="jan-grid">
+        <!-- Words per day chart -->
+        <div class="jan-card jan-wide">
+          <div class="jan-card-head">
+            <div class="jan-card-title">✍️ Words Written Per Day</div>
+            <div class="jan-card-sub">Last 30 days</div>
+          </div>
+          <div style="position:relative;height:160px"><canvas id="jWordsCh"></canvas></div>
+        </div>
+
+        <!-- Mood trend chart -->
+        <div class="jan-card jan-wide">
+          <div class="jan-card-head">
+            <div class="jan-card-title">😊 Mood Trend</div>
+            <div class="jan-card-sub">Score 1–5 over last 30 days</div>
+          </div>
+          <div style="position:relative;height:160px"><canvas id="jMoodCh"></canvas></div>
+        </div>
+
+        <!-- Mood breakdown -->
+        <div class="jan-card">
+          <div class="jan-card-head"><div class="jan-card-title">🎭 Mood Breakdown</div></div>
+          <div class="jan-mood-list" id="jMoodList"></div>
+        </div>
+
+        <!-- Sentiment donut -->
+        <div class="jan-card">
+          <div class="jan-card-head"><div class="jan-card-title">💬 Entry Sentiment</div><div class="jan-card-sub">AI-detected tone</div></div>
+          <div style="position:relative;height:140px;display:flex;align-items:center;justify-content:center">
+            <canvas id="jSentCh" style="max-width:140px;max-height:140px"></canvas>
+          </div>
+          <div class="jan-sent-legend">
+            <span style="color:#4caf50">● Positive: ${sentMap.Positive}</span>
+            <span style="color:#f59e0b">● Neutral: ${sentMap.Neutral}</span>
+            <span style="color:#ef4444">● Negative: ${sentMap.Negative}</span>
+          </div>
+        </div>
+
+        <!-- Tag cloud -->
+        <div class="jan-card">
+          <div class="jan-card-head"><div class="jan-card-title">🏷️ Topic Frequency</div><div class="jan-card-sub">What you write about most</div></div>
+          <div class="jan-tag-bars" id="jTagBars"></div>
+        </div>
+
+        <!-- Insights -->
+        <div class="jan-card">
+          <div class="jan-card-head"><div class="jan-card-title">💡 Insights</div></div>
+          <div class="jan-insights" id="jInsights"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Render mood list
+  const moodListEl=document.getElementById('jMoodList');
+  if(topMoods.length===0){
+    moodListEl.innerHTML='<div style="font-size:12px;color:var(--tx3);padding:8px 0">No mood data yet — add moods when writing!</div>';
+  } else {
+    topMoods.forEach(([e,count])=>{
+      const pct=Math.round(count/totalMoodEntries*100);
+      const mood=MOODS.find(m=>m.e===e);
+      moodListEl.innerHTML+=`<div class="jan-mood-row">
+        <span style="font-size:16px">${e}</span>
+        <span style="flex:1;font-size:12px;color:var(--tx2)">${mood?mood.l:e}</span>
+        <div style="width:80px;height:6px;background:var(--bd);border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${MOOD_COLORS[e]||'var(--p)'};border-radius:3px;transition:width .6s var(--ease)"></div>
+        </div>
+        <span style="font-size:11px;color:var(--tx3);min-width:28px;text-align:right">${pct}%</span>
+      </div>`;
+    });
+  }
+
+  // Render tag bars
+  const tagBarsEl=document.getElementById('jTagBars');
+  if(topTags.length===0){
+    tagBarsEl.innerHTML='<div style="font-size:12px;color:var(--tx3);padding:8px 0">No tags used yet!</div>';
+  } else {
+    const maxCount=topTags[0][1];
+    const tagColors=['#4caf50','#2196f3','#ff9800','#9c27b0','#f44336','#14b8a6'];
+    topTags.forEach(([tag,count],i)=>{
+      const pct=Math.round(count/maxCount*100);
+      tagBarsEl.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--tx2);min-width:72px">${tag}</span>
+        <div style="flex:1;height:7px;background:var(--bd);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${tagColors[i%tagColors.length]};border-radius:4px;transition:width .7s var(--ease)"></div>
+        </div>
+        <span style="font-size:11px;color:var(--tx3);min-width:16px">${count}</span>
+      </div>`;
+    });
+  }
+
+  // Render insights
+  const insEl=document.getElementById('jInsights');
+  const insights=[];
+  const avgMoodVal=journals.filter(j=>j.mood).reduce((s,j)=>{const m=MOODS.find(x=>x.e===j.mood);return s+(m?m.score:3);},0)/Math.max(journals.filter(j=>j.mood).length,1);
+  const bestMood=topMoods[0];
+  const recentSent=journals.slice(0,5).map(j=>sentimentScore(j.body||'').val);
+  const recentAvg=recentSent.reduce((a,b)=>a+b,0)/Math.max(recentSent.length,1);
+  if(streak>=3)insights.push({icon:'🔥',txt:`${streak}-day writing streak! Keep it up.`,color:'#ff9800'});
+  if(avgMoodVal>=4)insights.push({icon:'😊',txt:'Your overall mood has been great!',color:'#4caf50'});
+  else if(avgMoodVal<2.5)insights.push({icon:'💙',txt:'Mood seems low lately. Consider a gratitude entry.',color:'#2196f3'});
+  if(bestMood)insights.push({icon:bestMood[0],txt:`"${MOODS.find(m=>m.e===bestMood[0])?.l||bestMood[0]}" is your most common mood (${bestMood[1]}x).`,color:MOOD_COLORS[bestMood[0]]||'var(--p)'});
+  if(topTags[0])insights.push({icon:'🏷️',txt:`You write about "${topTags[0][0]}" most (${topTags[0][1]}x).`,color:'#9c27b0'});
+  if(avgWords>200)insights.push({icon:'📝',txt:`Deep writer! You average ${avgWords} words per entry.`,color:'#14b8a6'});
+  else if(avgWords<50&&journals.length>2)insights.push({icon:'💬',txt:'Try writing more — longer entries reveal patterns.',color:'#f59e0b'});
+  if(recentAvg>1)insights.push({icon:'✨',txt:'Recent entries feel very positive!',color:'#4caf50'});
+  else if(recentAvg<-1)insights.push({icon:'🤔',txt:'Recent tone seems challenging. Writing helps process emotions.',color:'#f59e0b'});
+  insEl.innerHTML=insights.slice(0,5).map(i=>`
+    <div style="display:flex;gap:9px;padding:9px 11px;background:var(--sf2);border-radius:9px;border-left:3px solid ${i.color};font-size:12px;color:var(--tx2);line-height:1.45">
+      <span>${i.icon}</span><span>${i.txt}</span>
+    </div>
+  `).join('') || '<div style="font-size:12px;color:var(--tx3)">Write more entries to unlock insights!</div>';
+
+  // Draw charts with Chart.js
+  requestAnimationFrame(()=>{
+    // Words per day bar chart
+    const wCtx=document.getElementById('jWordsCh');
+    if(wCtx){
+      new Chart(wCtx,{type:'bar',
+        data:{labels:dayLabels,datasets:[{data:wordCounts,backgroundColor:wordCounts.map(v=>v>0?'rgba(76,175,80,.75)':'rgba(0,0,0,0)'),borderRadius:3,borderSkipped:false}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:800,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+' words'}}},
+          scales:{y:{beginAtZero:true,ticks:{font:{size:9},color:tc},grid:{color:gc}},
+            x:{ticks:{font:{size:8},color:tc,autoSkip:true,maxTicksLimit:10},grid:{display:false}}}}});
+    }
+    // Mood trend line chart
+    const mCtx=document.getElementById('jMoodCh');
+    if(mCtx){
+      const moodData=moodScores.map((v,i)=>v===null?null:v);
+      new Chart(mCtx,{type:'line',
+        data:{labels:dayLabels,datasets:[{data:moodData,borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,.1)',borderWidth:2,pointRadius:moodData.map(v=>v!==null?3:0),fill:true,tension:.4,spanGaps:true}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:900,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const score=c.parsed.y;const m=MOODS.reduce((best,m)=>Math.abs(m.score-score)<Math.abs(best.score-score)?m:best,MOODS[0]);return m.e+' '+m.l+' ('+score.toFixed(1)+')';}}}},
+          scales:{y:{min:0,max:5.5,ticks:{callback:v=>['','😔','😴','🤔','😌','😊'][Math.round(v)]||'',font:{size:11},color:tc},grid:{color:gc}},
+            x:{ticks:{font:{size:8},color:tc,autoSkip:true,maxTicksLimit:10},grid:{display:false}}}}});
+    }
+    // Sentiment donut
+    const sCtx=document.getElementById('jSentCh');
+    if(sCtx&&(sentMap.Positive+sentMap.Neutral+sentMap.Negative>0)){
+      new Chart(sCtx,{type:'doughnut',
+        data:{labels:['Positive','Neutral','Negative'],datasets:[{data:[sentMap.Positive,sentMap.Neutral,sentMap.Negative],backgroundColor:['#4caf50','#f59e0b','#ef4444'],borderWidth:0,hoverOffset:6}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{duration:900,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+' entries'}}}}});
+    }
+  });
+}
+
+function fmtRelative(iso){
+  const d=new Date(iso+'T12:00:00'),n=new Date();
+  const diff=Math.floor((n-d)/864e5);
+  if(diff===0)return'Today';if(diff===1)return'Yesterday';
+  if(diff<7)return diff+'d ago';
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function renderJournalList(){
+  const list=document.getElementById('jList');
+  if(!list)return;
+  let journals=[...getJournals()];
+  if(jState.searchQ){
+    const q=jState.searchQ.toLowerCase();
+    journals=journals.filter(j=>(j.title||'').toLowerCase().includes(q)||(j.body||'').toLowerCase().includes(q));
+  }
+  list.innerHTML='';
+  if(journals.length===0){
+    list.innerHTML=`<div class="journal-empty-state"><div class="je-icon">📭</div><div class="je-txt">${jState.searchQ?'No entries match your search.':'No journal entries yet.\nClick "New Entry" to start writing!'}</div></div>`;
+    return;
+  }
+  journals.forEach((j,i)=>{
+    const card=document.createElement('div');
+    card.className='journal-card'+(jState.editId===j.id?' active':'');
+    card.style.animationDelay=i*25+'ms';
+    const mood=MOODS.find(m=>m.e===j.mood);
+    card.innerHTML=`
+      <div class="jc-date"><span class="jc-mood">${j.mood||'📝'}</span>${fmtRelative(j.date)} · ${new Date(j.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div>
+      <div class="jc-title">${escHtml(j.title||'Untitled')}</div>
+      <div class="jc-preview">${escHtml((j.body||'').slice(0,120))}</div>
+      <button class="jc-del" title="Delete entry" data-jid="${j.id}">×</button>
+    `;
+    card.addEventListener('click',e=>{
+      if(e.target.classList.contains('jc-del'))return;
+      jState.mode='view';jState.editId=j.id;
+      renderJournalPage();
+    });
+    card.querySelector('.jc-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      if(!confirm(`Delete "${j.title||'this entry'}"?`))return;
+      const u=usr();u.journals=u.journals.filter(x=>x.id!==j.id);
+      if(jState.editId===j.id){jState.mode='list';jState.editId=null;}
+      debounceSave();renderJournalPage();toast('Entry deleted.','warn');
+    });
+    list.appendChild(card);
+  });
+}
+
+function renderJournalEditorEmpty(wrap){
+  wrap.innerHTML=`
+    <div class="journal-editor-empty">
+      <div class="je-big-icon">📖</div>
+      <div class="je-hint">Select an entry to read,<br>or click <strong>✦ New Entry</strong> to start writing your story.</div>
+    </div>
+  `;
+}
+
+function renderJournalEditor(wrap){
+  const isEdit=jState.mode==='edit';
+  let existing=null;
+  if(isEdit&&jState.editId){existing=getJournals().find(j=>j.id===jState.editId);}
+  if(isEdit&&existing){
+    jState.selMood=jState.selMood??existing.mood??null;
+    jState.selTags=jState.selTags.length?jState.selTags:[...(existing.tags||[])];
+  }
+  const todayStr=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  wrap.innerHTML=`
+    <div class="journal-editor-form" id="jForm">
+      <div class="jef-toolbar">
+        <div class="jef-mood-wrap">
+          <span class="jef-mood-lbl">Mood:</span>
+          ${MOODS.map(m=>`<button class="mood-btn${jState.selMood===m.e?' sel':''}" data-mood="${m.e}" title="${m.l}">${m.e}</button>`).join('')}
+        </div>
+        <div class="jef-tags">
+          ${TAGS.map(t=>`<span class="tag-chip${(jState.selTags||[]).includes(t)?' sel':''}" data-tag="${t}">${t}</span>`).join('')}
+        </div>
+      </div>
+      <div class="jef-meta">
+        <div class="jef-date-lbl">${isEdit&&existing?fmtRelative(existing.date)+' · '+new Date(existing.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):todayStr}</div>
+        <input class="jef-title-inp" id="jTitleInp" placeholder="Title your entry…" maxlength="120" value="${escHtml(isEdit&&existing?existing.title||'':'')}"/>
+      </div>
+      <div class="jef-divider"></div>
+      <div class="jef-body">
+        <textarea class="jef-body-inp" id="jBodyInp" placeholder="Write freely… this is your space. What happened today? What are you thinking about? What are you grateful for?">${isEdit&&existing?escHtml(existing.body||''):''}</textarea>
+      </div>
+      <div class="jef-footer">
+        <span class="jef-word-count" id="jWordCount">0 words</span>
+        <button class="btn-discard" id="jDiscard">${isEdit?'Cancel':'Discard'}</button>
+        <button class="btn-save-journal" id="jSave">${isEdit?'Update entry ✓':'Save entry ✓'}</button>
+      </div>
+    </div>
+  `;
+
+  // Word count live
+  const bodyInp=document.getElementById('jBodyInp');
+  const wc=document.getElementById('jWordCount');
+  const updateWC=()=>{
+    const words=bodyInp.value.trim().split(/\s+/).filter(Boolean).length;
+    wc.textContent=words+' word'+(words!==1?'s':'');
+  };
+  bodyInp.addEventListener('input',updateWC);
+  updateWC();
+
+  // Mood select
+  wrap.querySelectorAll('.mood-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      jState.selMood=jState.selMood===btn.dataset.mood?null:btn.dataset.mood;
+      wrap.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('sel',b.dataset.mood===jState.selMood));
+    });
+  });
+
+  // Tag toggle
+  wrap.querySelectorAll('.tag-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const t=chip.dataset.tag;
+      if(jState.selTags.includes(t))jState.selTags=jState.selTags.filter(x=>x!==t);
+      else jState.selTags=[...jState.selTags,t];
+      chip.classList.toggle('sel',jState.selTags.includes(t));
+    });
+  });
+
+  // Discard
+  document.getElementById('jDiscard').addEventListener('click',()=>{
+    if(isEdit){jState.mode='view';renderJournalPage();}
+    else{jState.mode='list';jState.editId=null;renderJournalPage();}
+  });
+
+  // Save
+  document.getElementById('jSave').addEventListener('click',()=>{
+    const title=document.getElementById('jTitleInp').value.trim();
+    const body=document.getElementById('jBodyInp').value.trim();
+    if(!title&&!body){toast('Write something first!','warn');return;}
+    const u=usr();if(!u)return;
+    if(!u.journals)u.journals=[];
+    if(isEdit&&existing){
+      const idx=u.journals.findIndex(j=>j.id===existing.id);
+      if(idx>-1){u.journals[idx]={...u.journals[idx],title:title||'Untitled',body,mood:jState.selMood,tags:jState.selTags,updatedAt:new Date().toISOString()};}
+      toast('Entry updated! 📝');
+    } else {
+      const entry={id:uid(),title:title||'Untitled',body,mood:jState.selMood,tags:jState.selTags,date:today(),createdAt:new Date().toISOString()};
+      u.journals.unshift(entry);
+      jState.editId=entry.id;
+      toast('Journal saved! 📖');
+    }
+    jState.mode='view';jState.selMood=null;jState.selTags=[];
+    debounceSave();renderJournalPage();
+  });
+}
+
+function renderJournalBookView(wrap,entry){
+  const wordCount=(entry.body||'').trim().split(/\s+/).filter(Boolean).length;
+  const readMins=Math.max(1,Math.ceil(wordCount/200));
+  wrap.innerHTML=`
+    <div class="journal-book-view">
+      <div class="jbv-head">
+        <button class="jbv-back" id="jbvBack" title="Back to list">‹</button>
+        <div class="jbv-meta">
+          ${entry.tags&&entry.tags.length?`<div class="jbv-tags">${entry.tags.map(t=>`<span class="jbv-tag">${t}</span>`).join('')}</div>`:''}
+          <div class="jbv-date">${new Date(entry.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · ${wordCount} words · ${readMins} min read</div>
+        </div>
+        <div class="jbv-actions">
+          <button class="jbv-edit-btn" id="jbvEdit">✏ Edit</button>
+        </div>
+      </div>
+      <div class="journal-book-page">
+        ${entry.mood?`<div class="jbp-mood">${entry.mood}</div>`:''}
+        <div class="jbp-title">${escHtml(entry.title||'Untitled')}</div>
+        <div class="jbp-body">${escHtml(entry.body||'').replace(/\n/g,'<br>')}</div>
+        <div class="jbp-footer">
+          <span>${entry.updatedAt?'Last edited '+fmtRelative(entry.updatedAt.slice(0,10)):'Written on '+fmtRelative(entry.date)}</span>
+          <span>✍ ${wordCount} words</span>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('jbvBack').addEventListener('click',()=>{jState.mode='list';jState.editId=null;renderJournalPage();});
+  document.getElementById('jbvEdit').addEventListener('click',()=>{
+    jState.mode='edit';jState.selMood=entry.mood||null;jState.selTags=[...(entry.tags||[])];
+    renderJournalPage();
+  });
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// ── END JOURNAL MODULE ──
+
 async function boot(){
   const lsData=lsLoad();
   // Race cloud load against a 1.5s timeout so splash never hangs
