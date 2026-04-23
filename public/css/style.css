@@ -130,6 +130,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .jan-sent-legend{display:flex;justify-content:center;gap:10px;font-size:10px;margin-top:8px;flex-wrap:wrap;color:var(--tx3)}
 .jan-tag-bars{display:flex;flex-direction:column;gap:0}
 .jan-insights{display:flex;flex-direction:column;gap:7px}
+/* ── Journal Analytics ─────────────────────────────────── */
+.jan-chart-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.jan-chart-section.jan-chart-half {
+  display: inline-block;
+  width: calc(50% - 8px);
+  vertical-align: top;
+  box-sizing: border-box;
+}
+.jan-chart-section.jan-chart-half:nth-of-type(odd) { margin-right: 14px; }
+.jan-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx1);
+  margin-bottom: 14px;
+}
+.jan-chart-sub { font-size: 11px; font-weight: 400; color: var(--tx3); margin-left: 4px; }
+.jan-chart-wrap { height: 180px; position: relative; }
+.jan-mood-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.jan-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--tx2);
+}
+.jan-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.jan-legend-pct { color: var(--tx3); font-size: 10px; }
+
+/* Heatmap */
+.jan-heatmap { padding: 4px 0; }
+.jan-heat-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+.jan-heat-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--border);
+  transition: background 0.2s;
+  cursor: default;
+}
+.jan-heat-cell.active { background: #8b5cf6; }
+.jan-heat-cell:hover { opacity: 0.75; }
+
+@media (max-width: 640px) {
+  .jan-chart-section.jan-chart-half { width: 100%; display: block; margin-right: 0; }
+}
 @keyframes spin{to{transform:rotate(360deg)}}
 .H{display:none!important}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
