@@ -755,10 +755,227 @@ function renderJournalPage(){
   if(jState.tab==='entries'){const si=document.getElementById('jSearch');if(si){si.value=jState.searchQ||'';si.addEventListener('input',()=>{jState.searchQ=si.value;renderJournalPage();});}}
 }
 
-function renderJournalAnalyticsPanel(journals){
-  const wrap=document.createElement('div');wrap.className='jan-wrap';if(!journals.length){wrap.innerHTML='<div style="padding:20px;font-size:12px;color:var(--tx3)">Write a few entries to unlock analytics.</div>';return wrap;}
-  const avgWords=journals.length?Math.round(journals.reduce((s,j)=>s+(j.body||'').split(/\s+/).filter(Boolean).length,0)/journals.length):0;const moodCounts={};journals.filter(j=>j.mood).forEach(j=>{moodCounts[j.mood]=(moodCounts[j.mood]||0)+1;});const topMood=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
-  wrap.innerHTML=`<div class="jan-kpi-row">${[{icon:'📊',val:journals.length,lbl:'Total entries'},{icon:'🔥',val:''+(()=>{let s=0;const td=today();for(let i=0;i<365;i++){const d=dStr(addD(new Date(),-i));if(journals.some(j=>j.date===d))s++;else if(i>0)break;}return s;})(),lbl:'Day streak'},{icon:'📝',val:avgWords,lbl:'Avg words'},{icon:topMood?topMood[0]:'😊',val:topMood?topMood[1]:0,lbl:'Top mood count'}].map((k,i)=>`<div class="jan-kpi" style="animation-delay:${i*60}ms"><div class="jan-kpi-icon">${k.icon}</div><div class="jan-kpi-val">${k.val}</div><div class="jan-kpi-lbl">${k.lbl}</div></div>`).join('')}</div>`;
+function renderJournalAnalyticsPanel(journals) {
+  const wrap = document.createElement('div');
+  wrap.className = 'jan-wrap';
+
+  if (!journals.length) {
+    wrap.innerHTML = '<div style="padding:32px;text-align:center;font-size:13px;color:var(--tx3)">✍ Write a few entries to unlock analytics.</div>';
+    return wrap;
+  }
+
+  // ── Stats ─────────────────────────────────────────────────
+  const avgWords = Math.round(
+    journals.reduce((s, j) => s + (j.body || '').split(/\s+/).filter(Boolean).length, 0) / journals.length
+  );
+  const moodCounts = {};
+  journals.filter(j => j.mood).forEach(j => { moodCounts[j.mood] = (moodCounts[j.mood] || 0) + 1; });
+  const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0];
+  let streak = 0;
+  const td = today();
+  for (let i = 0; i < 365; i++) {
+    const d = dStr(addD(new Date(), -i));
+    if (journals.some(j => j.date === d)) streak++;
+    else if (i > 0) break;
+  }
+
+  // ── KPI row ───────────────────────────────────────────────
+  const kpiRow = document.createElement('div');
+  kpiRow.className = 'jan-kpi-row';
+  kpiRow.innerHTML = [
+    { icon: '📊', val: journals.length, lbl: 'Total entries' },
+    { icon: '🔥', val: streak, lbl: 'Day streak' },
+    { icon: '📝', val: avgWords, lbl: 'Avg words' },
+    { icon: topMood ? topMood[0] : '😊', val: topMood ? topMood[1] : 0, lbl: 'Top mood count' }
+  ].map((k, i) => `
+    <div class="jan-kpi" style="animation-delay:${i * 60}ms">
+      <div class="jan-kpi-icon">${k.icon}</div>
+      <div class="jan-kpi-val">${k.val}</div>
+      <div class="jan-kpi-lbl">${k.lbl}</div>
+    </div>`).join('');
+  wrap.appendChild(kpiRow);
+
+  // ── Mood over time chart ───────────────────────────────────
+  const MOOD_SCORE = { '😢': 1, '😞': 2, '😐': 3, '🙂': 4, '😊': 5, '😄': 6, '🤩': 7, '😡': 1, '😰': 2, '😴': 3 };
+  const moodEntries = journals.filter(j => j.mood && MOOD_SCORE[j.mood] !== undefined)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30); // last 30 mood entries
+
+  const moodSection = document.createElement('div');
+  moodSection.className = 'jan-chart-section';
+  moodSection.innerHTML = `
+    <div class="jan-chart-title">📈 Mood Over Time <span class="jan-chart-sub">(last 30 entries)</span></div>
+    <div class="jan-chart-wrap"><canvas id="moodLineChart"></canvas></div>`;
+  wrap.appendChild(moodSection);
+
+  // ── Mood distribution donut ────────────────────────────────
+  const moodDistSection = document.createElement('div');
+  moodDistSection.className = 'jan-chart-section jan-chart-half';
+  moodDistSection.innerHTML = `
+    <div class="jan-chart-title">😊 Mood Distribution</div>
+    <div class="jan-chart-wrap" style="height:200px"><canvas id="moodDonutChart"></canvas></div>
+    <div id="moodLegend" class="jan-mood-legend"></div>`;
+  wrap.appendChild(moodDistSection);
+
+  // ── Writing frequency heatmap (last 12 weeks) ──────────────
+  const heatSection = document.createElement('div');
+  heatSection.className = 'jan-chart-section jan-chart-half';
+  heatSection.innerHTML = `
+    <div class="jan-chart-title">📅 Writing Frequency <span class="jan-chart-sub">(last 12 weeks)</span></div>
+    <div id="journalHeatmap" class="jan-heatmap"></div>`;
+  wrap.appendChild(heatSection);
+
+  // ── Words per entry bar chart ──────────────────────────────
+  const wordsSection = document.createElement('div');
+  wordsSection.className = 'jan-chart-section';
+  wordsSection.innerHTML = `
+    <div class="jan-chart-title">📝 Words per Entry <span class="jan-chart-sub">(last 14 entries)</span></div>
+    <div class="jan-chart-wrap"><canvas id="wordsBarChart"></canvas></div>`;
+  wrap.appendChild(wordsSection);
+
+  // ── Render charts after DOM insert ────────────────────────
+  const tc = () => isDk() ? '#6b7280' : '#9ca3af';
+  const gc = () => isDk() ? '#1f2937' : '#f3f4f6';
+
+  requestAnimationFrame(() => {
+
+    // 1. Mood line chart
+    if (moodEntries.length > 1) {
+      const moodColors = moodEntries.map(e => {
+        const s = MOOD_SCORE[e.mood] || 3;
+        return s >= 5 ? '#22c55e' : s >= 4 ? '#86efac' : s >= 3 ? '#fbbf24' : '#ef4444';
+      });
+      new Chart(document.getElementById('moodLineChart'), {
+        type: 'line',
+        data: {
+          labels: moodEntries.map(e => {
+            const d = new Date(e.date + 'T12:00:00');
+            return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          }),
+          datasets: [{
+            label: 'Mood',
+            data: moodEntries.map(e => MOOD_SCORE[e.mood] || 3),
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139,92,246,0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointBackgroundColor: moodColors,
+            pointHoverRadius: 7
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800, easing: 'easeInOutQuart' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: c => {
+                  const e = moodEntries[c.dataIndex];
+                  const labels = { 1: 'Very low', 2: 'Low', 3: 'Neutral', 4: 'Good', 5: 'Happy', 6: 'Very happy', 7: 'Excellent' };
+                  return `${e.mood}  ${labels[c.parsed.y] || 'Neutral'}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 1, max: 7,
+              ticks: {
+                stepSize: 1,
+                font: { size: 10 },
+                color: tc(),
+                callback: v => ['', '😢', '😞', '😐', '🙂', '😊', '😄', '🤩'][v] || ''
+              },
+              grid: { color: gc() }
+            },
+            x: { ticks: { font: { size: 9 }, color: tc(), maxTicksLimit: 10 }, grid: { display: false } }
+          }
+        }
+      });
+    } else {
+      document.getElementById('moodLineChart').closest('.jan-chart-wrap').innerHTML =
+        '<div style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px">Add mood to at least 2 entries to see the trend</div>';
+    }
+
+    // 2. Mood donut
+    if (Object.keys(moodCounts).length) {
+      const MOOD_COLORS_MAP = { '😄': '#22c55e', '🤩': '#10b981', '😊': '#86efac', '🙂': '#fbbf24', '😐': '#94a3b8', '😞': '#f97316', '😢': '#ef4444', '😡': '#dc2626', '😰': '#8b5cf6', '😴': '#64748b' };
+      const labels = Object.keys(moodCounts);
+      const data = labels.map(k => moodCounts[k]);
+      const colors = labels.map(k => MOOD_COLORS_MAP[k] || '#94a3b8');
+      new Chart(document.getElementById('moodDonutChart'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: isDk() ? '#111827' : '#ffffff' }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          animation: { duration: 700 },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `${c.label}  ${c.parsed} entries (${Math.round(c.parsed / journals.filter(j => j.mood).length * 100)}%)` } }
+          }
+        }
+      });
+      const total = data.reduce((a, b) => a + b, 0);
+      document.getElementById('moodLegend').innerHTML = labels.map((l, i) =>
+        `<div class="jan-legend-item"><span class="jan-legend-dot" style="background:${colors[i]}"></span>${l} <span class="jan-legend-pct">${Math.round(data[i] / total * 100)}%</span></div>`
+      ).join('');
+    }
+
+    // 3. Heatmap (last 12 weeks)
+    const heatEl = document.getElementById('journalHeatmap');
+    const dateSet = new Set(journals.map(j => j.date));
+    const today2 = new Date();
+    const days = [];
+    for (let i = 83; i >= 0; i--) {
+      const d = new Date(today2);
+      d.setDate(d.getDate() - i);
+      days.push(dStr(d));
+    }
+    const WDL = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    heatEl.innerHTML = `
+      <div class="jan-heat-grid">
+        ${days.map(d => {
+          const has = dateSet.has(d);
+          const dt = new Date(d + 'T12:00:00');
+          return `<div class="jan-heat-cell ${has ? 'active' : ''}" title="${dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}${has ? ' ✓' : ''}"></div>`;
+        }).join('')}
+      </div>`;
+
+    // 4. Words bar chart (last 14)
+    const last14 = [...journals].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
+    const wordCounts = last14.map(j => (j.body || '').split(/\s+/).filter(Boolean).length);
+    const barColors = wordCounts.map(w => w > 200 ? '#8b5cf6' : w > 100 ? '#06b6d4' : w > 50 ? '#22c55e' : '#94a3b8');
+    new Chart(document.getElementById('wordsBarChart'), {
+      type: 'bar',
+      data: {
+        labels: last14.map(j => {
+          const d = new Date(j.date + 'T12:00:00');
+          return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        }),
+        datasets: [{ data: wordCounts, backgroundColor: barColors, borderRadius: 5, borderSkipped: false }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 700, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => `${c.parsed.y} words` } }
+        },
+        scales: {
+          y: { ticks: { font: { size: 10 }, color: tc() }, grid: { color: gc() } },
+          x: { ticks: { font: { size: 9 }, color: tc() }, grid: { display: false } }
+        }
+      }
+    });
+  });
+
   return wrap;
 }
 
