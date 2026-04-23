@@ -733,26 +733,148 @@ function getJournals(){const u=usr();if(!u)return[];return u.journals||[];}
 function sentimentScore(text){const pos=['happy','great','amazing','good','love','grateful','excited','proud','wonderful','fantastic','joy','blessed','achieve','win','success','positive','better','best','improve','hope'];const neg=['sad','bad','terrible','awful','hate','angry','frustrated','fail','lost','stress','anxious','depressed','horrible','worst','struggle','hard','difficult','pain','tired','overwhelmed'];const words=(text||'').toLowerCase().split(/\W+/);let s=0;words.forEach(w=>{if(pos.includes(w))s++;if(neg.includes(w))s--;});if(s>2)return{label:'Positive',color:'#4caf50',icon:'😊',val:s};if(s<-1)return{label:'Negative',color:'#ef4444',icon:'😔',val:s};return{label:'Neutral',color:'#f59e0b',icon:'😐',val:s};}
 function fmtRelative(dateStr){const d=new Date(dateStr+'T12:00:00');const diff=Math.round((Date.now()-d)/(1000*60*60*24));if(diff===0)return'Today';if(diff===1)return'Yesterday';if(diff<7)return diff+' days ago';return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 
-function renderJournalPage(){
-  const pg=document.getElementById('pgJournal');pg.innerHTML='';const journals=getJournals();const layout=document.createElement('div');layout.className='journal-layout';
-  const sidebar=document.createElement('div');sidebar.className='journal-sidebar';
-  let streak=0;const td=today();for(let i=0;i<365;i++){const d=dStr(addD(new Date(),-i));if(journals.some(j=>j.date===d))streak++;else if(i>0)break;}
-  const totalWords=journals.reduce((s,j)=>s+(j.body||'').split(/\s+/).filter(Boolean).length,0);
-  const thisMonth=journals.filter(j=>{const d=new Date(j.date+'T12:00:00'),n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
-  sidebar.innerHTML=`<div class="journal-sidebar-head"><span class="journal-sidebar-title">📔 My Journal</span><button class="btn-new-journal" id="jNewBtn">✦ New Entry</button></div><div class="journal-mini-stats"><div class="jms"><div class="jms-val">${journals.length}</div><div class="jms-lbl">Entries</div></div><div class="jms"><div class="jms-val">${streak}</div><div class="jms-lbl">Streak</div></div><div class="jms"><div class="jms-val">${thisMonth}</div><div class="jms-lbl">This month</div></div><div class="jms"><div class="jms-val">${totalWords>999?Math.round(totalWords/1000)+'k':totalWords}</div><div class="jms-lbl">Words</div></div></div><div class="journal-tabs"><div class="jtab ${jState.tab==='entries'?'on':''}" id="jtabEntries">Entries</div><div class="jtab ${jState.tab==='analytics'?'on':''}" id="jtabAnalytics">Analytics</div></div>`;
-  const contentArea=document.createElement('div');contentArea.style.cssText='flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0';
-  if(jState.tab==='entries'){const searchDiv=document.createElement('div');searchDiv.className='journal-search';searchDiv.innerHTML='<input type="text" placeholder="Search entries…" id="jSearch"/>';contentArea.appendChild(searchDiv);const listDiv=document.createElement('div');listDiv.className='journal-list';const q=(jState.searchQ||'').toLowerCase();const filtered=journals.filter(j=>!q||(j.title||'').toLowerCase().includes(q)||(j.body||'').toLowerCase().includes(q));if(filtered.length===0){listDiv.innerHTML=`<div class="journal-empty-state"><div class="je-icon">📝</div><div class="je-txt">${q?'No entries match your search.':'No journal entries yet.\nClick "New Entry" to start writing.'}</div></div>`;}else{filtered.forEach(entry=>{const card=document.createElement('div');card.className='journal-card'+(jState.editId===entry.id?' active':'');card.innerHTML=`<div class="jc-date"><span class="jc-mood">${entry.mood||'📅'}</span>${fmtRelative(entry.date)}</div><div class="jc-title">${escHtml(entry.title||'Untitled')}</div><div class="jc-preview">${escHtml((entry.body||'').slice(0,120))}</div><button class="jc-del" data-id="${entry.id}" title="Delete entry">×</button>`;card.addEventListener('click',e=>{if(e.target.classList.contains('jc-del'))return;jState.editId=entry.id;jState.mode='view';renderJournalPage();});card.querySelector('.jc-del').addEventListener('click',async e=>{e.stopPropagation();if(!confirm('Delete this entry?'))return;try{const journals2=await API.Journals.remove(entry.id);S.user.journals=journals2;if(jState.editId===entry.id){jState.editId=null;jState.mode='list';}renderJournalPage();toast('Entry deleted.','warn');}catch(e2){toast(e2.message,'warn');}});listDiv.appendChild(card);});}contentArea.appendChild(listDiv);}
-  else{contentArea.appendChild(renderJournalAnalyticsPanel(journals));}
-  sidebar.appendChild(contentArea);
-  sidebar.addEventListener('click',e=>{const t=e.target;if(t.id==='jtabEntries'){jState.tab='entries';renderJournalPage();}else if(t.id==='jtabAnalytics'){jState.tab='analytics';renderJournalPage();}else if(t.id==='jNewBtn'){jState.mode='edit';jState.editId=null;jState.selMood=null;jState.selTags=[];renderJournalPage();}});
-  const rightPane=document.createElement('div');rightPane.className='journal-editor';
-  if(jState.mode==='edit'){renderJournalEditorForm(rightPane);}
-  else if(jState.mode==='view'&&jState.editId){const entry=journals.find(j=>j.id===jState.editId);if(entry)renderJournalBookView(rightPane,entry);else{jState.mode='list';jState.editId=null;}}
-  else{rightPane.innerHTML='<div class="journal-editor-empty"><div class="je-big-icon">📖</div><div class="je-hint">Select an entry to read it,<br>or click <strong>New Entry</strong> to start writing.</div></div>';}
-  layout.appendChild(sidebar);layout.appendChild(rightPane);
-  const statsRow=document.createElement('div');statsRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';[{icon:'📅',label:'Writing streak',val:streak+' day'+(streak!==1?'s':'')},{icon:'📝',label:'Total entries',val:journals.length},{icon:'📖',label:'Words written',val:totalWords.toLocaleString()},{icon:'🗓',label:'This month',val:thisMonth}].forEach(s=>{const el=document.createElement('div');el.className='jstat';el.innerHTML=`${s.icon} ${s.label}: <strong>${s.val}</strong>`;statsRow.appendChild(el);});
-  pg.appendChild(statsRow);pg.appendChild(layout);
-  if(jState.tab==='entries'){const si=document.getElementById('jSearch');if(si){si.value=jState.searchQ||'';si.addEventListener('input',()=>{jState.searchQ=si.value;renderJournalPage();});}}
+function renderJournalPage() {
+  const pg = document.getElementById('pgJournal');
+  pg.innerHTML = '';
+  const journals = getJournals();
+
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = dStr(addD(new Date(), -i));
+    if (journals.some(j => j.date === d)) streak++;
+    else if (i > 0) break;
+  }
+  const totalWords = journals.reduce((s, j) => s + (j.body || '').split(/\s+/).filter(Boolean).length, 0);
+  const thisMonth = journals.filter(j => {
+    const d = new Date(j.date + 'T12:00:00'), n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }).length;
+
+  // ── Stat bar (top) ─────────────────────────────────────────
+  const statsRow = document.createElement('div');
+  statsRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  [
+    { icon: '📅', label: 'Writing streak', val: streak + ' day' + (streak !== 1 ? 's' : '') },
+    { icon: '📝', label: 'Total entries', val: journals.length },
+    { icon: '📖', label: 'Words written', val: totalWords.toLocaleString() },
+    { icon: '🗓', label: 'This month', val: thisMonth }
+  ].forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'jstat';
+    el.innerHTML = `${s.icon} ${s.label}: <strong>${s.val}</strong>`;
+    statsRow.appendChild(el);
+  });
+  pg.appendChild(statsRow);
+
+  // ── Layout ─────────────────────────────────────────────────
+  const layout = document.createElement('div');
+  layout.className = 'journal-layout';
+
+  // ── SIDEBAR ────────────────────────────────────────────────
+  const sidebar = document.createElement('div');
+  sidebar.className = 'journal-sidebar';
+  sidebar.innerHTML = `
+    <div class="journal-sidebar-head">
+      <span class="journal-sidebar-title">📔 My Journal</span>
+      <button class="btn-new-journal" id="jNewBtn">✦ New Entry</button>
+    </div>
+    <div class="journal-mini-stats">
+      <div class="jms"><div class="jms-val">${journals.length}</div><div class="jms-lbl">Entries</div></div>
+      <div class="jms"><div class="jms-val">${streak}</div><div class="jms-lbl">Streak</div></div>
+      <div class="jms"><div class="jms-val">${thisMonth}</div><div class="jms-lbl">This month</div></div>
+      <div class="jms"><div class="jms-val">${totalWords > 999 ? Math.round(totalWords / 1000) + 'k' : totalWords}</div><div class="jms-lbl">Words</div></div>
+    </div>
+    <div class="journal-tabs">
+      <div class="jtab ${jState.tab === 'entries' ? 'on' : ''}" id="jtabEntries">Entries</div>
+      <div class="jtab ${jState.tab === 'analytics' ? 'on' : ''}" id="jtabAnalytics">Analytics</div>
+    </div>`;
+
+  // Sidebar list (only for entries tab)
+  if (jState.tab === 'entries') {
+    const searchDiv = document.createElement('div');
+    searchDiv.className = 'journal-search';
+    searchDiv.innerHTML = '<input type="text" placeholder="Search entries…" id="jSearch"/>';
+    sidebar.appendChild(searchDiv);
+
+    const listDiv = document.createElement('div');
+    listDiv.className = 'journal-list';
+    const q = (jState.searchQ || '').toLowerCase();
+    const filtered = journals.filter(j => !q || (j.title || '').toLowerCase().includes(q) || (j.body || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      listDiv.innerHTML = `<div class="journal-empty-state"><div class="je-icon">📝</div><div class="je-txt">${q ? 'No entries match your search.' : 'No journal entries yet.\nClick "New Entry" to start writing.'}</div></div>`;
+    } else {
+      filtered.forEach(entry => {
+        const card = document.createElement('div');
+        card.className = 'journal-card' + (jState.editId === entry.id ? ' active' : '');
+        card.innerHTML = `
+          <div class="jc-date"><span class="jc-mood">${entry.mood || '📅'}</span>${fmtRelative(entry.date)}</div>
+          <div class="jc-title">${escHtml(entry.title || 'Untitled')}</div>
+          <div class="jc-preview">${escHtml((entry.body || '').slice(0, 120))}</div>
+          <button class="jc-del" data-id="${entry.id}" title="Delete entry">×</button>`;
+        card.addEventListener('click', e => {
+          if (e.target.classList.contains('jc-del')) return;
+          jState.editId = entry.id;
+          jState.mode = 'view';
+          renderJournalPage();
+        });
+        card.querySelector('.jc-del').addEventListener('click', async e => {
+          e.stopPropagation();
+          if (!confirm('Delete this entry?')) return;
+          try {
+            const j2 = await API.Journals.remove(entry.id);
+            S.user.journals = j2;
+            if (jState.editId === entry.id) { jState.editId = null; jState.mode = 'list'; }
+            renderJournalPage();
+            toast('Entry deleted.', 'warn');
+          } catch (e2) { toast(e2.message, 'warn'); }
+        });
+        listDiv.appendChild(card);
+      });
+    }
+    sidebar.appendChild(listDiv);
+  } else {
+    // Analytics tab — sidebar just shows a hint
+    const hint = document.createElement('div');
+    hint.style.cssText = 'padding:16px 12px;font-size:12px;color:var(--tx3);line-height:1.7';
+    hint.innerHTML = '📊 Analytics are shown in the main panel →';
+    sidebar.appendChild(hint);
+  }
+
+  sidebar.addEventListener('click', e => {
+    const t = e.target;
+    if (t.id === 'jtabEntries') { jState.tab = 'entries'; jState.mode = 'list'; jState.editId = null; renderJournalPage(); }
+    else if (t.id === 'jtabAnalytics') { jState.tab = 'analytics'; renderJournalPage(); }
+    else if (t.id === 'jNewBtn') { jState.tab = 'entries'; jState.mode = 'edit'; jState.editId = null; jState.selMood = null; jState.selTags = []; renderJournalPage(); }
+  });
+
+  // ── RIGHT PANEL ────────────────────────────────────────────
+  const rightPane = document.createElement('div');
+  rightPane.className = 'journal-editor';
+
+  if (jState.tab === 'analytics') {
+    rightPane.appendChild(renderJournalAnalyticsPanel(journals));
+  } else if (jState.mode === 'edit') {
+    renderJournalEditorForm(rightPane);
+  } else if (jState.mode === 'view' && jState.editId) {
+    const entry = journals.find(j => j.id === jState.editId);
+    if (entry) renderJournalBookView(rightPane, entry);
+    else { jState.mode = 'list'; jState.editId = null; }
+  } else {
+    rightPane.innerHTML = `<div class="journal-editor-empty"><div class="je-big-icon">📖</div><div class="je-hint">Select an entry to read it,<br>or click <strong>New Entry</strong> to start writing.</div></div>`;
+  }
+
+  layout.appendChild(sidebar);
+  layout.appendChild(rightPane);
+  pg.appendChild(layout);
+
+  if (jState.tab === 'entries') {
+    const si = document.getElementById('jSearch');
+    if (si) {
+      si.value = jState.searchQ || '';
+      si.addEventListener('input', () => { jState.searchQ = si.value; renderJournalPage(); });
+    }
+  }
 }
 
 function renderJournalAnalyticsPanel(journals) {
