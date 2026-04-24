@@ -1232,41 +1232,57 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 // ══════════════════════════════════════════════════════════
 //  BOOT — check token → load user → mount
 // ══════════════════════════════════════════════════════════
-async function boot() {
-  // Safety net: never stay on splash longer than 7 seconds
-  const splashTimeout = setTimeout(() => {
-    document.getElementById('splash').classList.add('H');
-    document.getElementById('authView').classList.remove('H');
-    applyDark();
-    console.warn('[Devnix] Boot timed out — showing login screen');
-  }, 7000);
-
-  if (API.getToken()) {
-    try {
-      // Race between API call and a 6s timeout
-      const user = await Promise.race([
-        API.Auth.me(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-      ]);
-      clearTimeout(splashTimeout);
-      S.user = normaliseUser(user);
-      S.dark = user.dark || false;
-      applyDark();
-      document.getElementById('splash').classList.add('H');
-      mountApp();
-      return;
-    } catch(e) {
-      clearTimeout(splashTimeout);
-      // Token expired, invalid, or backend timeout — go to login
-      if (e.message !== 'timeout') API.Auth.logout();
-    }
-  } else {
-    clearTimeout(splashTimeout);
-  }
-
+function showLogin() {
   applyDark();
   document.getElementById('splash').classList.add('H');
   document.getElementById('authView').classList.remove('H');
+}
+
+async function boot() {
+  // Hard cap: splash NEVER shows more than 8 seconds
+  const hardTimer = setTimeout(() => {
+    console.warn('[Devnix] Hard timeout — forcing login screen');
+    showLogin();
+  }, 8000);
+
+  const done = () => clearTimeout(hardTimer);
+
+  if (!API.getToken()) {
+    done();
+    showLogin();
+    return;
+  }
+
+  try {
+    // Race API call vs 5s soft timeout
+    const user = await Promise.race([
+      API.Auth.me(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+    ]);
+
+    done();
+
+    // Guard: if user is null/undefined, treat as bad token
+    if (!user || !user.email) {
+      console.warn('[Devnix] /auth/me returned empty user — clearing token');
+      API.Auth.logout();
+      showLogin();
+      return;
+    }
+
+    S.user = normaliseUser(user);
+    S.dark = user.dark || false;
+    applyDark();
+    document.getElementById('splash').classList.add('H');
+    mountApp();
+
+  } catch(e) {
+    done();
+    console.warn('[Devnix] Auth error:', e.message);
+    // Clear bad token so next visit goes straight to login
+    API.Auth.logout();
+    showLogin();
+  }
 }
 
 function mountApp() {
