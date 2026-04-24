@@ -1233,10 +1233,22 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 //  BOOT — check token → load user → mount
 // ══════════════════════════════════════════════════════════
 async function boot() {
-  // If token exists, try to restore session silently
+  // Safety net: never stay on splash longer than 7 seconds
+  const splashTimeout = setTimeout(() => {
+    document.getElementById('splash').classList.add('H');
+    document.getElementById('authView').classList.remove('H');
+    applyDark();
+    console.warn('[Devnix] Boot timed out — showing login screen');
+  }, 7000);
+
   if (API.getToken()) {
     try {
-      const user = await API.Auth.me();
+      // Race between API call and a 6s timeout
+      const user = await Promise.race([
+        API.Auth.me(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+      ]);
+      clearTimeout(splashTimeout);
       S.user = normaliseUser(user);
       S.dark = user.dark || false;
       applyDark();
@@ -1244,10 +1256,14 @@ async function boot() {
       mountApp();
       return;
     } catch(e) {
-      // Token expired or invalid — fall through to login
-      API.Auth.logout();
+      clearTimeout(splashTimeout);
+      // Token expired, invalid, or backend timeout — go to login
+      if (e.message !== 'timeout') API.Auth.logout();
     }
+  } else {
+    clearTimeout(splashTimeout);
   }
+
   applyDark();
   document.getElementById('splash').classList.add('H');
   document.getElementById('authView').classList.remove('H');
