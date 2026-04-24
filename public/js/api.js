@@ -27,7 +27,7 @@
     return;
   }
   // 3. Auto-detect — same host as the page, backend always on 3001
-  window._DEVNIX_API_BASE = `http://${location.hostname}:3001/api`;
+  window._DEVNIX_API_BASE = `${location.origin}/api`;
 })();
 
 const API_BASE = window._DEVNIX_API_BASE;
@@ -40,20 +40,26 @@ function clearToken() { localStorage.removeItem('devnix_token'); }
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
 async function apiFetch(path, { method = 'GET', body } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+ const headers = {};
+if (body !== undefined) headers['Content-Type'] = 'application/json';
   const token = getToken();
   if (token) headers['Authorization'] = 'Bearer ' + token;
 
-  let res;
-  try {
-    res = await fetch(API_BASE + path, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  } catch (networkErr) {
-    throw new Error('Cannot reach server — is the backend running on port 3001?');
-  }
+  const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 10000);
+
+let res;
+try {
+  res = await fetch(API_BASE + path, {
+    method,
+    headers,
+    signal: controller.signal,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  clearTimeout(timeout);
+} catch (networkErr) {
+  throw new Error(`Network error: ${networkErr.message}`);
+}
 
   let data;
   try { data = await res.json(); } catch { data = {}; }
