@@ -1931,5 +1931,29 @@ function mountApp() {
   setSyncState('saved');
 }
 
+// ── Modal buttons wired once at startup ───────────────────
+// FIX: bmSave/bmCancel/gmSave/gmCancel were only wired inside
+// renderFinAnalytics(). If modal opened before Analytics tab
+// was visited, the Save button did nothing. Wire once here.
+(function wireBudgetGoalModals() {
+  const bmCancel = document.getElementById('bmCancel');
+  const bmSave   = document.getElementById('bmSave');
+  const gmCancel = document.getElementById('gmCancel');
+  const gmSave   = document.getElementById('gmSave');
+  if (bmCancel) bmCancel.onclick = () => document.getElementById('budgetModal').classList.add('H');
+  if (bmSave)   bmSave.onclick   = saveBudget;
+  if (gmCancel) gmCancel.onclick = () => document.getElementById('goalModal').classList.add('H');
+  if (gmSave)   gmSave.onclick   = saveGoal;
+  document.getElementById('gmColorPicker')?.querySelectorAll('span').forEach(s => {
+    s.onclick = () => {
+      _anSelColor = s.dataset.c;
+      const inp = document.getElementById('gmColor');
+      if (inp) inp.value = _anSelColor;
+      document.getElementById('gmColorPicker').querySelectorAll('span').forEach(x => x.style.border = '2px solid transparent');
+      s.style.border = '2px solid var(--tx)';
+    };
+  });
+})();
+
 // ── Start the app ─────────────────────────────────────────
 boot();
