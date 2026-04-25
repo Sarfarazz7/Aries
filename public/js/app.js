@@ -1848,7 +1848,7 @@ function renderJournalEditorForm(wrap) {
     } catch (e) {
       ghostText = '';
       updateWC();
-    } } finally {
+    }  finally {
     setTimeout(() => { isLoadingAI = false; }, 3000);
   }
   }
