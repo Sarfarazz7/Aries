@@ -1813,9 +1813,10 @@ function renderJournalEditorForm(wrap) {
   let ghostText = '';
   let isLoadingAI = false;
 
-  async function fetchCompletion() {
-    const text = bodyInp.value.trim();
-    if (!text || isLoadingAI) return;
+ async function fetchCompletion() {
+  const text = bodyInp.value.trim();
+  if (!text || isLoadingAI) return;
+  if (text.length < 10) { toast('Write a bit more first!', 'warn'); return; }
     isLoadingAI = true;
     wc.textContent = '✨ thinking…';
     try {
@@ -1847,9 +1848,9 @@ function renderJournalEditorForm(wrap) {
     } catch (e) {
       ghostText = '';
       updateWC();
-    } finally {
-      isLoadingAI = false;
-    }
+    } } finally {
+    setTimeout(() => { isLoadingAI = false; }, 3000);
+  }
   }
 
   bodyInp.addEventListener('keydown', async e => {
