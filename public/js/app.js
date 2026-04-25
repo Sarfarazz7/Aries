@@ -1881,26 +1881,6 @@ function renderJournalEditorForm(wrap) {
     }
   });
 
-  bodyInp.addEventListener('keydown', async e => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (ghostText) {
-        bodyInp.value += ghostText;
-        ghostText = '';
-        ghost.textContent = '';
-        updateWC();
-      } else {
-        await fetchCompletion();
-      }
-    } else if (e.key === 'Escape') {
-      ghostText = '';
-      ghost.textContent = '';
-      updateWC();
-    } else {
-      ghostText = '';
-      ghost.textContent = '';
-    }
-  });
   
   wrap.querySelectorAll('.mood-btn').forEach(btn => {
     btn.addEventListener('click', () => {
