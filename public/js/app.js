@@ -1885,8 +1885,6 @@ bodyInp.addEventListener('input', updateWC);
       ghost.textContent = '';
     }
   });
-
-  wrap.querySelectorAll('.mood-btn').forEach(btn => {
   
   wrap.querySelectorAll('.mood-btn').forEach(btn => {
     btn.addEventListener('click', () => {
