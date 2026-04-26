@@ -1147,7 +1147,7 @@ async function saveBudget() {
   if (!cat || isNaN(amt) || amt < 0) { toast('Enter a valid amount.', 'warn'); return; }
   try {
     const raw = await API.Budgets.set(cat, amt);
-    S.user.budgets = toPlainObj(raw);
+S.user.budgets = { ...toPlainObj(S.user.budgets), ...toPlainObj(raw) };
     document.getElementById('budgetModal').classList.add('H');
     refreshAnalyticsCharts(S.user.transactions || []);
     toast('Budget set for ' + cat + '!');
