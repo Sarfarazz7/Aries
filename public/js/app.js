@@ -217,7 +217,8 @@ function debounceSave() {
 
 // ── Nav ─────────────────────────────────────────────────────
 document.querySelectorAll('.nb-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
+    if (!(await saveCurrentJournalDraft())) return;
     document.querySelectorAll('.nb-btn').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
     ['pgDashboard', 'pgFinance', 'pgJournal', 'pgProfile'].forEach(id => {
@@ -2025,6 +2026,9 @@ const MOODS = [
 const TAGS = ['Gratitude', 'Work', 'Personal', 'Goals', 'Health', 'Travel', 'Learning', 'Idea'];
 
 let jState = { mode: 'list', tab: 'entries', editId: null, selMood: null, selTags: [], searchQ: '' };
+let journalAutoSaveTimer = null;
+let journalAutoSaveBusy = false;
+let journalAutoSaveQueued = false;
 function getJournals() { const u = usr(); return u ? (u.journals || []) : []; }
 
 function fmtRelative(dateStr) {
@@ -2046,6 +2050,71 @@ function stripTags(html) {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || '';
+}
+
+function scheduleJournalAutoSave() {
+  clearTimeout(journalAutoSaveTimer);
+  journalAutoSaveTimer = setTimeout(() => saveCurrentJournalDraft({ auto: true }), 1200);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveCurrentJournalDraft({ auto: true });
+});
+
+async function saveCurrentJournalDraft({ auto = false, notify = false, requireContent = false } = {}) {
+  clearTimeout(journalAutoSaveTimer);
+  if (jState.mode !== 'edit') return true;
+
+  const titleEl = document.getElementById('jTitleInp');
+  const bodyEl = document.getElementById('jBodyInp');
+  if (!titleEl || !bodyEl) return true;
+
+  const title = (titleEl.value || '').trim();
+  const body = (bodyEl.innerHTML || '').trim();
+  const plainBody = stripTags(body).trim();
+  if (!title && !plainBody) {
+    if (requireContent) toast('Write something first!', 'warn');
+    return !requireContent;
+  }
+
+  if (journalAutoSaveBusy) {
+    journalAutoSaveQueued = true;
+    await new Promise(resolve => {
+      const check = () => journalAutoSaveBusy ? setTimeout(check, 50) : resolve();
+      check();
+    });
+    return saveCurrentJournalDraft({ auto, notify, requireContent });
+  }
+
+  journalAutoSaveBusy = true;
+  setSyncState('saving');
+  try {
+    let journals2;
+    const existing = jState.editId ? getJournals().find(j => j.id === jState.editId) : null;
+    const payload = { title: title || 'Untitled', body, mood: jState.selMood, tags: jState.selTags };
+
+    if (existing) {
+      journals2 = await API.Journals.update(existing.id, payload);
+    } else {
+      journals2 = await API.Journals.add({ ...payload, date: today() });
+      jState.editId = Array.isArray(journals2) && journals2.length ? journals2[journals2.length - 1]?.id : null;
+    }
+
+    S.user.journals = journals2;
+    setSyncState('saved');
+    if (notify) toast(auto ? 'Draft auto-saved.' : 'Journal saved!');
+    return true;
+  } catch (e) {
+    setSyncState('saved');
+    toast(e.message || 'Failed to auto-save journal.', 'warn');
+    return false;
+  } finally {
+    journalAutoSaveBusy = false;
+    if (journalAutoSaveQueued) {
+      journalAutoSaveQueued = false;
+      scheduleJournalAutoSave();
+    }
+  }
 }
 
 function renderJournalPage() {
@@ -2151,8 +2220,10 @@ function renderJournalPage() {
     sidebar.appendChild(hint);
   }
 
-  sidebar.addEventListener('click', e => {
+  sidebar.addEventListener('click', async e => {
     const t = e.target;
+    if (!['jtabEntries', 'jtabAnalytics', 'jNewBtn'].includes(t.id)) return;
+    if (!(await saveCurrentJournalDraft())) return;
     if (t.id === 'jtabEntries') { jState.tab = 'entries'; jState.mode = 'list'; jState.editId = null; renderJournalPage(); }
     else if (t.id === 'jtabAnalytics') { jState.tab = 'analytics'; renderJournalPage(); }
     else if (t.id === 'jNewBtn') { jState.tab = 'entries'; jState.mode = 'edit'; jState.editId = null; jState.selMood = null; jState.selTags = []; renderJournalPage(); }
@@ -2644,7 +2715,11 @@ function renderJournalEditorForm(wrap) {
     wc.textContent = words + ' word' + (words !== 1 ? 's' : ''); 
   };
   bodyInp.addEventListener('input', updateWC);
+  bodyInp.addEventListener('input', scheduleJournalAutoSave);
   updateWC();
+
+  const titleInp = wrap.querySelector('#jTitleInp');
+  if (titleInp) titleInp.addEventListener('input', scheduleJournalAutoSave);
 
   // Toolbar: formatting commands
   wrap.querySelectorAll('.jef-tool-btn[data-cmd]').forEach(btn => {
@@ -2716,7 +2791,7 @@ function renderJournalEditorForm(wrap) {
   let isLoadingAI = false;
 
  async function fetchCompletion() {
-  const text = bodyInp.value.trim();
+  const text = (bodyInp.innerText || bodyInp.textContent || '').trim();
   if (!text || isLoadingAI) return;
   if (text.length < 10) { toast('Write a bit more first!', 'warn'); return; }
     isLoadingAI = true;
@@ -2790,6 +2865,7 @@ function renderJournalEditorForm(wrap) {
     btn.addEventListener('click', () => {
       jState.selMood = jState.selMood === btn.dataset.mood ? null : btn.dataset.mood;
       wrap.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('sel', b.dataset.mood === jState.selMood));
+      scheduleJournalAutoSave();
     });
   });
 
@@ -2799,6 +2875,7 @@ function renderJournalEditorForm(wrap) {
       if (jState.selTags.includes(t)) jState.selTags = jState.selTags.filter(x => x !== t);
       else jState.selTags = [...jState.selTags, t];
       chip.classList.toggle('sel', jState.selTags.includes(t));
+      scheduleJournalAutoSave();
     });
   });
 
@@ -2808,25 +2885,10 @@ function renderJournalEditorForm(wrap) {
   });
 
   wrap.querySelector('#jSave').addEventListener('click', async () => {
-    const titleEl = document.getElementById('jTitleInp');
-    const bodyEl = document.getElementById('jBodyInp');
-    const title = (titleEl ? titleEl.value : '').trim();
-    const body = (bodyEl ? bodyEl.innerHTML : '').trim();
-    if (!title && !body) { toast('Write something first!', 'warn'); return; }
-    try {
-      if (isEdit && existing) {
-        const journals2 = await API.Journals.update(existing.id, { title: title || 'Untitled', body, mood: jState.selMood, tags: jState.selTags });
-        S.user.journals = journals2;
-        toast('Entry updated! 📝');
-      } else {
-        const journals2 = await API.Journals.add({ title: title || 'Untitled', body, mood: jState.selMood, tags: jState.selTags, date: today() });
-        S.user.journals = journals2;
-        jState.editId = Array.isArray(journals2) && journals2.length ? journals2[journals2.length - 1]?.id : null;
-        toast('Journal saved! 📖');
-      }
-      jState.mode = 'view'; jState.selMood = null; jState.selTags = [];
-      renderJournalPage();
-    } catch (e) { toast(e.message || 'Failed to save entry.', 'warn'); }
+    const saved = await saveCurrentJournalDraft({ notify: true, requireContent: true });
+    if (!saved) return;
+    jState.mode = 'view'; jState.selMood = null; jState.selTags = [];
+    renderJournalPage();
   });
 }
 
