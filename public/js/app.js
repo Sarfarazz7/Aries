@@ -2728,7 +2728,29 @@ function renderJournalEditorForm(wrap) {
   };
   const unwrapTypedChar = span => {
     if (!span || !span.parentNode) return;
-    span.replaceWith(document.createTextNode(span.textContent || ''));
+    const parent = span.parentNode;
+    const textNode = document.createTextNode(span.textContent || '');
+    const sel = window.getSelection();
+    const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    const childIndex = Array.prototype.indexOf.call(parent.childNodes, span);
+    const shouldKeepCaret =
+      range &&
+      range.collapsed &&
+      (
+        span.contains(range.startContainer) ||
+        (range.startContainer === parent && range.startOffset === childIndex + 1)
+      );
+
+    parent.replaceChild(textNode, span);
+
+    if (shouldKeepCaret) {
+      const nextRange = document.createRange();
+      nextRange.setStartAfter(textNode);
+      nextRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(nextRange);
+      savedRange = nextRange.cloneRange();
+    }
   };
   const insertAnimatedText = text => {
     const sel = window.getSelection();
