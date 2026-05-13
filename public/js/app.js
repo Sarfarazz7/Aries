@@ -372,8 +372,16 @@ function addRipple(el, e) {
 // ── Keyboard nav ───────────────────────────────────────────
 let kF = { r: 0, c: 0 };
 document.addEventListener('keydown', e => {
-  const tag = document.activeElement ? document.activeElement.tagName : '';
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const activeEl = document.activeElement;
+  const tag = activeEl ? activeEl.tagName : '';
+  const isEditable = activeEl && (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    activeEl.isContentEditable ||
+    activeEl.closest?.('[contenteditable="true"]')
+  );
+  if (isEditable) return;
   const boxes = document.querySelectorAll('.ck');
   if (!boxes.length) return;
   const cols = 7, rows = Math.ceil(boxes.length / cols);
