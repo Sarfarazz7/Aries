@@ -2070,11 +2070,7 @@ async function saveCurrentJournalDraft({ auto = false, notify = false, requireCo
   if (!titleEl || !bodyEl) return true;
 
   const title = (titleEl.value || '').trim();
-  const cleanBody = bodyEl.cloneNode(true);
-  cleanBody.querySelectorAll('.jef-typed-char').forEach(span => {
-    span.replaceWith(document.createTextNode(span.textContent || ''));
-  });
-  const body = (cleanBody.innerHTML || '').trim();
+  const body = (bodyEl.innerHTML || '').trim();
   const plainBody = stripTags(body).trim();
   if (!title && !plainBody) {
     if (requireContent) toast('Write something first!', 'warn');
@@ -2726,59 +2722,37 @@ function renderJournalEditorForm(wrap) {
     const words = ((text.trim().match(/\S+/g)) || []).length;
     wc.textContent = words + ' word' + (words !== 1 ? 's' : '');
   };
-  const unwrapTypedChar = span => {
-    if (!span || !span.parentNode) return;
-    const parent = span.parentNode;
-    const textNode = document.createTextNode(span.textContent || '');
+  let newParagraphPending = false;
+  const getCurrentTextBlock = () => {
     const sel = window.getSelection();
-    const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
-    const childIndex = Array.prototype.indexOf.call(parent.childNodes, span);
-    const shouldKeepCaret =
-      range &&
-      range.collapsed &&
-      (
-        span.contains(range.startContainer) ||
-        (range.startContainer === parent && range.startOffset === childIndex + 1)
-      );
-
-    parent.replaceChild(textNode, span);
-
-    if (shouldKeepCaret) {
-      const nextRange = document.createRange();
-      nextRange.setStartAfter(textNode);
-      nextRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(nextRange);
-      savedRange = nextRange.cloneRange();
-    }
-  };
-  const insertAnimatedText = text => {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
+    if (!sel || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
-    if (!bodyInp.contains(range.commonAncestorContainer)) return;
-    range.deleteContents();
-    const span = document.createElement('span');
-    span.className = 'jef-typed-char';
-    span.textContent = text;
-    range.insertNode(span);
-    range.setStartAfter(span);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    span._unwrapTimer = setTimeout(() => unwrapTypedChar(span), 380);
-    updateWC();
-    playTypingFx();
-    scheduleJournalAutoSave();
-    saveSelection();
+    if (!bodyInp.contains(range.commonAncestorContainer)) return null;
+    let node = range.startContainer.nodeType === Node.ELEMENT_NODE
+      ? range.startContainer
+      : range.startContainer.parentElement;
+    while (node && node !== bodyInp) {
+      if (node.matches?.('p,div,li,blockquote,h1,h2,h3,h4,h5,h6')) return node;
+      node = node.parentElement;
+    }
+    return null;
   };
-  bodyInp.addEventListener('beforeinput', e => {
-    if (e.isComposing || e.inputType !== 'insertText' || !e.data) return;
-    e.preventDefault();
-    insertAnimatedText(e.data);
+  const playNewParagraphFx = () => {
+    if (!newParagraphPending) return;
+    newParagraphPending = false;
+    const block = getCurrentTextBlock();
+    if (!block) return;
+    block.classList.remove('jef-new-paragraph');
+    void block.offsetWidth;
+    block.classList.add('jef-new-paragraph');
+    setTimeout(() => block.classList.remove('jef-new-paragraph'), 520);
+  };
+  bodyInp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') newParagraphPending = true;
   });
   bodyInp.addEventListener('input', updateWC);
   bodyInp.addEventListener('input', playTypingFx);
+  bodyInp.addEventListener('input', playNewParagraphFx);
   bodyInp.addEventListener('input', scheduleJournalAutoSave);
   updateWC();
 
