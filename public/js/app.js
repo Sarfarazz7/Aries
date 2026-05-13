@@ -3082,108 +3082,68 @@ async function renderCommandCenter() {
   if (!el) return;
   const snap = getLifeSnapshot();
   if (!snap) return;
-  const { habits, finance, journal } = snap;
+  const { habits, finance } = snap;
   const u = usr();
   const name = (u?.email || '').split('@')[0] || 'there';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const insights = computeCrossInsights(snap);
   const predictions = computeFinancePredictions();
-  const cb = isDk() ? '#13161f' : '#f8fafc';
-  const cbr = isDk() ? '#1e2333' : '#e2e8f0';
+  const habitTone = habits.todayPct >= 80 ? 'good' : habits.todayPct >= 50 ? 'warn' : 'bad';
+  const moneyTone = finance.monthNet >= 0 ? 'good' : 'bad';
+  const firstInsight = insights[0];
+  const firstPrediction = predictions[0];
 
- el.innerHTML = `
-  <div style="margin-bottom:20px">
-
-    <!-- Header row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div>
-        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;font-weight:600">${greeting}</div>
-        <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.4px;line-height:1.2">${name.charAt(0).toUpperCase() + name.slice(1)} 👋</div>
+  el.innerHTML = `
+    <div class="dash-shell">
+      <div class="dash-head">
+        <div>
+          <div class="dash-eyebrow">${greeting}</div>
+          <div class="dash-title">${escHtml(name.charAt(0).toUpperCase() + name.slice(1))}</div>
+        </div>
+        <div class="dash-date">
+          <span>${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          <strong>Command Center</strong>
+        </div>
       </div>
-      <div style="text-align:right">
-        <div style="font-size:11px;color:var(--tx3)">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:2px">Devnix Command Center</div>
-      </div>
-    </div>
 
-    <!-- Main grid: AI Coach + 3 KPIs side by side -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-
-      <!-- AI Coach — spans 2 cols -->
-      <div id="aiCoachCard" style="grid-column:span 2;background:${isDk()?'linear-gradient(135deg,#1a1040,#0d1f3c)':'linear-gradient(135deg,#f5f3ff,#eff6ff)'};border:1px solid ${isDk()?'#2d1f6e':'#c4b5fd'};border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start">
-        <div style="width:38px;height:38px;border-radius:10px;background:${isDk()?'rgba(139,92,246,.25)':'rgba(139,92,246,.15)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🤖</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:9px;font-weight:700;color:${isDk()?'#a78bfa':'#7c3aed'};letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">AI Life Coach</div>
-          <div id="aiCoachText" style="font-size:12px;color:var(--tx2);line-height:1.6">
-            <span style="color:var(--tx3)">✨ Analyzing your day...</span>
+      <div class="dash-grid">
+        <section class="dash-card dash-coach">
+          <div class="dash-card-label">AI life coach</div>
+          <div id="aiCoachText" class="dash-coach-text">
+            <span>Analyzing your day...</span>
           </div>
-        </div>
+        </section>
+
+        <section class="dash-card dash-metric ${habitTone}">
+          <div class="dash-card-label">Habits today</div>
+          <div class="dash-metric-value">${habits.todayPct}%</div>
+          <div class="dash-metric-meta">${habits.todayDone}/${habits.totalTasks} complete · ${habits.streak} day streak</div>
+          <div class="dash-mini-track"><span style="width:${Math.min(habits.todayPct, 100)}%"></span></div>
+        </section>
+
+        <section class="dash-card dash-metric ${moneyTone}">
+          <div class="dash-card-label">This month</div>
+          <div class="dash-metric-value">${fmtCurrency(finance.monthNet)}</div>
+          <div class="dash-metric-meta">${finance.savingsRate}% savings rate</div>
+          <div class="dash-status">${finance.overBudgetCats.length ? 'Over budget: ' + escHtml(finance.overBudgetCats[0]) : 'Budget on track'}</div>
+        </section>
+
+        ${firstInsight ? `
+          <section class="dash-card dash-note">
+            <div class="dash-card-label">Insight</div>
+            <div class="dash-note-title">${escHtml(firstInsight.title)}</div>
+            <div class="dash-note-body">${escHtml(firstInsight.body)}</div>
+          </section>` : ''}
+
+        ${firstPrediction ? `
+          <section class="dash-card dash-note">
+            <div class="dash-card-label">Prediction</div>
+            <div class="dash-note-title">${escHtml(firstPrediction.title)}</div>
+            <div class="dash-note-body">${escHtml(firstPrediction.body)}</div>
+          </section>` : ''}
       </div>
-
-      <!-- Habits KPI -->
-      <div style="background:${cb};border:1px solid ${cbr};border-radius:14px;padding:14px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;right:0;bottom:0;width:3px;background:${habits.todayPct>=80?'#22c55e':habits.todayPct>=50?'#f97316':'#ef4444'};border-radius:0 14px 14px 0"></div>
-        <div style="font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">💪 Habits</div>
-        <div style="font-size:26px;font-weight:800;color:${habits.todayPct>=80?'#22c55e':habits.todayPct>=50?'#f97316':'#ef4444'};line-height:1">${habits.todayPct}%</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:4px">${habits.todayDone}/${habits.totalTasks} · ${habits.streak}d 🔥</div>
-        <div style="height:3px;background:${isDk()?'#1e2333':'#e2e8f0'};border-radius:2px;margin-top:8px;overflow:hidden">
-          <div style="height:100%;width:${Math.min(habits.todayPct,100)}%;background:${habits.todayPct>=80?'#22c55e':habits.todayPct>=50?'#f97316':'#ef4444'};border-radius:2px;transition:width .8s"></div>
-        </div>
-      </div>
-
-      <!-- Finance KPI -->
-      <div style="background:${cb};border:1px solid ${cbr};border-radius:14px;padding:14px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;right:0;bottom:0;width:3px;background:${finance.monthNet>=0?'#22c55e':'#ef4444'};border-radius:0 14px 14px 0"></div>
-        <div style="font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">💰 Month</div>
-        <div style="font-size:20px;font-weight:800;color:${finance.monthNet>=0?'#22c55e':'#ef4444'};line-height:1">${fmtCurrency(finance.monthNet)}</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:4px">${finance.savingsRate}% savings</div>
-        <div style="font-size:9px;margin-top:4px;color:${finance.overBudgetCats.length?'#ef4444':'#22c55e'}">${finance.overBudgetCats.length?'⚠ Over: '+finance.overBudgetCats[0]:'✓ On track'}</div>
-      </div>
-    </div>
-
-    <!-- Insights + Predictions row -->
-    ${(insights.length || predictions.length) ? `
-    <div style="display:grid;grid-template-columns:${insights.length&&predictions.length?'1fr 1fr':'1fr'};gap:10px">
-
-      ${insights.length ? `
-      <div style="background:${cb};border:1px solid ${cbr};border-radius:14px;padding:14px">
-        <div style="font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:5px">
-          🧠 Insights
-        </div>
-        <div style="display:flex;flex-direction:column;gap:7px">
-          ${insights.map(ins=>`
-          <div style="display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:9px;background:${ins.bg};border-left:2px solid ${ins.color}">
-            <span style="font-size:13px;flex-shrink:0;margin-top:1px">${ins.icon}</span>
-            <div>
-              <div style="font-size:11px;font-weight:600;color:${ins.color};margin-bottom:1px">${ins.title}</div>
-              <div style="font-size:10px;color:var(--tx3);line-height:1.4">${ins.body}</div>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>` : ''}
-
-      ${predictions.length ? `
-      <div style="background:${cb};border:1px solid ${cbr};border-radius:14px;padding:14px">
-        <div style="font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">
-          📈 Predictions
-        </div>
-        <div style="display:flex;flex-direction:column;gap:7px">
-          ${predictions.map(p=>`
-          <div style="display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:9px;background:${p.bg}">
-            <span style="font-size:13px;flex-shrink:0;margin-top:1px">${p.icon}</span>
-            <div>
-              <div style="font-size:11px;font-weight:600;color:${p.color};margin-bottom:1px">${p.title}</div>
-              <div style="font-size:10px;color:var(--tx3);line-height:1.4">${p.body}</div>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>` : ''}
-
-    </div>` : ''}
-
-  </div>
-  `;
+    </div>`;
 
   fetchAICoach(snap);
 }
