@@ -2089,20 +2089,22 @@ async function processJournalImages(files) {
     for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
         try {
-            const base64 = await new Promise((resolve, reject) => {
+            const data = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = e => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width, height = img.height;
-                        const max = 1000; // max px
+                        const max = 1000;
                         if (width > height && width > max) { height *= max / width; width = max; }
                         else if (height > max) { width *= max / height; height = max; }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                        const src = canvas.toDataURL('image/jpeg', 0.8);
+                        // Default sticker size: 200px wide, centered roughly
+                        resolve({ src, w: 200, h: Math.round(200 * (height / width)), x: 50, y: 50 });
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -2110,7 +2112,7 @@ async function processJournalImages(files) {
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
-            results.push(base64);
+            results.push(data);
         } catch (e) { console.error('Image processing failed', e); }
     }
     return results;
@@ -2760,18 +2762,17 @@ function renderJournalEditorForm(wrap) {
         <input class="jef-title-inp" id="jTitleInp" placeholder="Entry title…" value="${escHtml(existing?.title || '')}"/>
       </div>
       <div class="jef-divider"></div>
-      <div class="jef-body">
+      <div class="jef-body" id="jefWorkspace" style="position:relative">
         <div class="jef-body-inp jef-rich-text" id="jBodyInp" contenteditable="true" placeholder="What's on your mind today?…"></div>
+        <div id="jStickerLayer" class="j-sticker-layer" style="position:absolute;inset:0;pointer-events:none"></div>
       </div>
-      </div>
-      <div class="jef-divider"></div>
+      
       <div class="jef-images-section">
         <div class="jef-images-head">
-          <span class="jef-images-title">📸 Memories & Images</span>
-          <button class="jef-add-img-btn" id="jAddImgBtn" title="Add images">+ Add Photos</button>
+          <span class="jef-images-title">📸 Scrapbook Mode</span>
+          <button class="jef-add-img-btn" id="jAddImgBtn" title="Add sticker photos">+ Add Sticker</button>
           <input type="file" id="jImgInp" multiple accept="image/*" style="display:none"/>
         </div>
-        <div class="jef-img-grid" id="jImgGrid"></div>
       </div>
       <div class="jef-footer">
         <span class="jef-word-count" id="jWC">0 words</span>
@@ -3067,24 +3068,75 @@ function renderJournalEditorForm(wrap) {
         renderJournalPage();
     });
 
-    // Image logic
+    // Sticker Logic
     const imgInp = wrap.querySelector('#jImgInp');
-    const imgGrid = wrap.querySelector('#jImgGrid');
+    const stickerLayer = wrap.querySelector('#jStickerLayer');
     const addImgBtn = wrap.querySelector('#jAddImgBtn');
 
-    const renderImgGrid = () => {
-        if (!imgGrid) return;
-        imgGrid.innerHTML = '';
-        jState.selImages.forEach((src, idx) => {
-            const item = document.createElement('div');
-            item.className = 'jef-img-item';
-            item.innerHTML = `<img src="${src}"/><button class="jef-img-del" data-idx="${idx}" title="Remove image">×</button>`;
-            item.querySelector('.jef-img-del').onclick = () => {
+    const renderStickers = () => {
+        if (!stickerLayer) return;
+        stickerLayer.innerHTML = '';
+        jState.selImages.forEach((data, idx) => {
+            const s = document.createElement('div');
+            s.className = 'j-sticker';
+            s.style.cssText = `left:${data.x}px;top:${data.y}px;width:${data.w}px;height:${data.h}px`;
+            s.innerHTML = `<img src="${data.src}" draggable="false"/><div class="js-handle"></div><button class="js-del">×</button>`;
+            
+            // Interaction logic
+            let isDragging = false, isResizing = false;
+            let startX, startY, startW, startH, startLeft, startTop;
+
+            const onMove = (e) => {
+                if (isDragging) {
+                    data.x = startLeft + (e.clientX - startX);
+                    data.y = startTop + (e.clientY - startY);
+                    s.style.left = data.x + 'px';
+                    s.style.top = data.y + 'px';
+                } else if (isResizing) {
+                    data.w = Math.max(50, startW + (e.clientX - startX));
+                    data.h = Math.max(50, startH + (e.clientY - startY));
+                    s.style.width = data.w + 'px';
+                    s.style.height = data.h + 'px';
+                }
+            };
+
+            const onUp = () => {
+                if (isDragging || isResizing) {
+                    isDragging = isResizing = false;
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    s.classList.remove('active');
+                    scheduleJournalAutoSave();
+                }
+            };
+
+            s.onmousedown = (e) => {
+                if (e.target.classList.contains('js-del')) return;
+                e.preventDefault();
+                startX = e.clientX; startY = e.clientY;
+                startLeft = data.x; startTop = data.y;
+                startW = data.w; startH = data.h;
+
+                if (e.target.classList.contains('js-handle')) isResizing = true;
+                else isDragging = true;
+
+                s.classList.add('active');
+                // Bring to front
+                jState.selImages.push(jState.selImages.splice(idx, 1)[0]);
+                renderStickers();
+
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            };
+
+            s.querySelector('.js-del').onclick = (e) => {
+                e.stopPropagation();
                 jState.selImages.splice(idx, 1);
-                renderImgGrid();
+                renderStickers();
                 scheduleJournalAutoSave();
             };
-            imgGrid.appendChild(item);
+
+            stickerLayer.appendChild(s);
         });
     };
 
@@ -3094,16 +3146,16 @@ function renderJournalEditorForm(wrap) {
             if (!imgInp.files.length) return;
             addImgBtn.disabled = true;
             addImgBtn.textContent = '⌛ Processing…';
-            const base64s = await processJournalImages(imgInp.files);
-            jState.selImages = [...jState.selImages, ...base64s];
-            renderImgGrid();
+            const stickerDataArray = await processJournalImages(imgInp.files);
+            jState.selImages = [...jState.selImages, ...stickerDataArray];
+            renderStickers();
             scheduleJournalAutoSave();
             imgInp.value = '';
             addImgBtn.disabled = false;
-            addImgBtn.textContent = '+ Add Photos';
+            addImgBtn.textContent = '+ Add Sticker';
         };
     }
-    renderImgGrid();
+    renderStickers();
 }
 
 function renderJournalBookView(wrap, entry) {
@@ -3128,8 +3180,8 @@ function renderJournalBookView(wrap, entry) {
         <div class="jbp-body">${entry.body || ''}</div>
         
         ${entry.images && entry.images.length ? `
-          <div class="jbv-gallery">
-            ${entry.images.map(src => `<div class="jbv-img-wrap"><img src="${src}" class="jbv-img" onclick="openLightbox(this.src)"/></div>`).join('')}
+          <div class="jbv-scrapbook-area" style="position:relative;margin:20px 0;min-height:300px">
+            ${entry.images.map(s => `<div class="jbv-sticker" style="position:absolute;left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px;box-shadow:0 4px 15px rgba(0,0,0,0.1);border-radius:4px;overflow:hidden;cursor:zoom-in" onclick="openLightbox('${s.src}')"><img src="${s.src}" style="width:100%;height:100%;display:block;object-fit:cover"/></div>`).join('')}
           </div>
         ` : ''}
 
