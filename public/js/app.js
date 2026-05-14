@@ -2096,13 +2096,13 @@ async function processJournalImages(files) {
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width, height = img.height;
-                        const max = 800; // Reduced for better backend compatibility
+                        const max = 400; // Shrink for testing backend limits
                         if (width > height && width > max) { height *= max / width; width = max; }
                         else if (height > max) { width *= max / height; height = max; }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6)); // Lower quality for smaller payload
+                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // Low quality for testing
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -2153,6 +2153,10 @@ async function saveCurrentJournalDraft({ auto = false, notify = false, requireCo
             tags: jState.selTags,
             images: jState.selImages
         };
+        console.log('[Journal] Saving payload...', { 
+            imagesCount: payload.images.length, 
+            totalSize: JSON.stringify(payload).length 
+        });
 
         if (existing) {
             journals2 = await API.Journals.update(existing.id, payload);
@@ -3037,7 +3041,14 @@ function renderJournalBookView(wrap, entry) {
     };
 
     wrap.querySelector('#jbvBack').addEventListener('click', () => { jState.mode = 'list'; jState.editId = null; renderJournalPage(); });
-    wrap.querySelector('#jbvEdit').addEventListener('click', () => { jState.mode = 'edit'; jState.selMood = entry.mood || null; jState.selTags = [...(entry.tags || [])]; jState.selImages = [...(entry.images || [])]; renderJournalPage(); });
+    wrap.querySelector('#jbvEdit').addEventListener('click', () => { 
+        jState.mode = 'edit'; 
+        jState.editId = entry.id; // CRITICAL FIX: Set the ID!
+        jState.selMood = entry.mood || null; 
+        jState.selTags = [...(entry.tags || [])]; 
+        jState.selImages = [...(entry.images || [])]; 
+        renderJournalPage(); 
+    });
 }
 
 // ══════════════════════════════════════════════════════════
