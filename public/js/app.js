@@ -2755,14 +2755,14 @@ function renderJournalEditorForm(wrap) {
         </div>
       </div>
 
-      <div class="jef-meta">
-        <div class="jef-date-lbl">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-        <input class="jef-title-inp" id="jTitleInp" placeholder="Entry title…" value="${escHtml(existing?.title || '')}"/>
-      </div>
       <div class="jef-divider"></div>
       
       <div class="jef-split-body">
         <div class="jef-main-area">
+          <div class="jef-meta">
+            <div class="jef-date-lbl">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <input class="jef-title-inp" id="jTitleInp" placeholder="Entry title…" value="${escHtml(existing?.title || '')}"/>
+          </div>
           <div class="jef-body">
             <div class="jef-body-inp jef-rich-text" id="jBodyInp" contenteditable="true" placeholder="What's on your mind today?…"></div>
           </div>
