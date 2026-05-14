@@ -4938,7 +4938,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed var(--bd);
 }
 
 .jef-side-title {
@@ -4947,6 +4949,32 @@ body {
   color: var(--tx3);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.jef-add-img-btn {
+  background: var(--p);
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(var(--p-rgb, 59, 130, 246), 0.3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jef-add-img-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 16px rgba(var(--p-rgb, 59, 130, 246), 0.4);
+}
+
+.jef-add-img-btn:active {
+  transform: translateY(0);
 }
 
 .jef-side-gallery {
