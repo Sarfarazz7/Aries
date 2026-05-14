@@ -2937,14 +2937,19 @@ function renderJournalEditorForm(wrap) {
         if (!sideGallery) return;
         sideGallery.innerHTML = '';
         if (!jState.selImages.length) {
-            sideGallery.innerHTML = '<div class="jef-side-empty">No photos yet.<br>Click + to add.</div>';
+            sideGallery.innerHTML = '<div class="jef-side-empty">No photos yet.<br>Your "Memory Wall" starts here.</div>';
             return;
         }
         jState.selImages.forEach((src, idx) => {
             const item = document.createElement('div');
-            item.className = 'jef-side-item';
-            item.innerHTML = `<img src="${src}" onclick="openLightbox('${src}')"/><button class="jef-side-del">×</button>`;
-            item.querySelector('.jef-side-del').onclick = (e) => {
+            item.className = 'jef-side-frame'; // New "Frame" class
+            item.innerHTML = `
+                <div class="jef-frame-inner">
+                    <img src="${src}" onclick="openLightbox('${src}')"/>
+                    <button class="jef-frame-del" title="Remove photo">×</button>
+                </div>
+            `;
+            item.querySelector('.jef-frame-del').onclick = (e) => {
                 e.stopPropagation();
                 jState.selImages.splice(idx, 1);
                 renderSideGallery();
@@ -3002,9 +3007,15 @@ function renderJournalBookView(wrap, entry) {
         </div>
         ${entry.images && entry.images.length ? `
           <div class="jbv-sidebar">
-            <div class="jbv-sidebar-title">MEMORIES</div>
-            <div class="jbv-sidebar-grid">
-              ${entry.images.map(src => `<div class="jbv-sidebar-item" onclick="openLightbox('${src}')"><img src="${src}"/></div>`).join('')}
+            <div class="jbv-sidebar-title">MEMORY WALL</div>
+            <div class="jbv-sidebar-stack">
+              ${entry.images.map(src => `
+                <div class="jbv-frame" onclick="openLightbox('${src}')">
+                  <div class="jbv-frame-inner">
+                    <img src="${src}"/>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           </div>
         ` : ''}
