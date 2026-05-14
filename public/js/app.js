@@ -2165,8 +2165,11 @@ async function saveCurrentJournalDraft({ auto = false, notify = false, requireCo
 
         console.log('[Journal] Server Response:', journals2);
         
-        // Check if server actually saved them
+        // Truth Alert: Show the user exactly what the server saved
         const savedEntry = journals2.find(j => j.id === (jState.editId || existing?.id));
+        if (savedEntry) {
+            window.alert('SERVER SAVED: ' + (savedEntry.images ? `Photos found (${savedEntry.images.length})` : 'NO PHOTOS FIELD FOUND! (Server is still old)'));
+        }
         
         S.user.journals = journals2;
         setSyncState('saved');
