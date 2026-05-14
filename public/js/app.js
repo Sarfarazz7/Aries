@@ -3079,7 +3079,7 @@ function renderJournalEditorForm(wrap) {
         jState.selImages.forEach((data, idx) => {
             const s = document.createElement('div');
             s.className = 'j-sticker';
-            s.style.cssText = `left:${data.x}px;top:${data.y}px;width:${data.w}px;height:${data.h}px`;
+            s.style.cssText = `position:absolute;left:${data.x}px;top:${data.y}px;width:${data.w}px;height:${data.h}px;z-index:10`;
             s.innerHTML = `<img src="${data.src}" draggable="false"/><div class="js-handle"></div><button class="js-del">×</button>`;
             
             // Interaction logic
@@ -3087,14 +3087,17 @@ function renderJournalEditorForm(wrap) {
             let startX, startY, startW, startH, startLeft, startTop;
 
             const onMove = (e) => {
+                const cx = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const cy = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                
                 if (isDragging) {
-                    data.x = startLeft + (e.clientX - startX);
-                    data.y = startTop + (e.clientY - startY);
+                    data.x = startLeft + (cx - startX);
+                    data.y = startTop + (cy - startY);
                     s.style.left = data.x + 'px';
                     s.style.top = data.y + 'px';
                 } else if (isResizing) {
-                    data.w = Math.max(50, startW + (e.clientX - startX));
-                    data.h = Math.max(50, startH + (e.clientY - startY));
+                    data.w = Math.max(50, startW + (cx - startX));
+                    data.h = Math.max(50, startH + (cy - startY));
                     s.style.width = data.w + 'px';
                     s.style.height = data.h + 'px';
                 }
@@ -3105,15 +3108,20 @@ function renderJournalEditorForm(wrap) {
                     isDragging = isResizing = false;
                     document.removeEventListener('mousemove', onMove);
                     document.removeEventListener('mouseup', onUp);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onUp);
                     s.classList.remove('active');
                     scheduleJournalAutoSave();
                 }
             };
 
-            s.onmousedown = (e) => {
+            const onDown = (e) => {
                 if (e.target.classList.contains('js-del')) return;
-                e.preventDefault();
-                startX = e.clientX; startY = e.clientY;
+                
+                const cx = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const cy = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                
+                startX = cx; startY = cy;
                 startLeft = data.x; startTop = data.y;
                 startW = data.w; startH = data.h;
 
@@ -3121,13 +3129,20 @@ function renderJournalEditorForm(wrap) {
                 else isDragging = true;
 
                 s.classList.add('active');
-                // Bring to front
-                jState.selImages.push(jState.selImages.splice(idx, 1)[0]);
-                renderStickers();
+                
+                // Bring to front without re-rendering everything
+                const all = stickerLayer.querySelectorAll('.j-sticker');
+                all.forEach(el => el.style.zIndex = '10');
+                s.style.zIndex = '100';
 
                 document.addEventListener('mousemove', onMove);
                 document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onUp);
             };
+
+            s.onmousedown = onDown;
+            s.ontouchstart = onDown;
 
             s.querySelector('.js-del').onclick = (e) => {
                 e.stopPropagation();
