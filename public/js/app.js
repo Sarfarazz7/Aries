@@ -2096,13 +2096,13 @@ async function processJournalImages(files) {
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width, height = img.height;
-                        const max = 400; // Shrink for testing backend limits
+                        const max = 1000; // Restored to high-definition
                         if (width > height && width > max) { height *= max / width; width = max; }
                         else if (height > max) { width *= max / height; height = max; }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // Low quality for testing
+                        resolve(canvas.toDataURL('image/jpeg', 0.8)); // High quality restored
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -2167,11 +2167,7 @@ async function saveCurrentJournalDraft({ auto = false, notify = false, requireCo
         
         // Check if server actually saved them
         const savedEntry = journals2.find(j => j.id === (jState.editId || existing?.id));
-        if (savedEntry && (!savedEntry.images || !savedEntry.images.length) && payload.images.length > 0) {
-            console.error('[Journal] CRITICAL: Backend accepted save but DID NOT return images. Your backend schema likely lacks an "images" field.');
-            toast('Warning: Backend did not save your photos. Check database schema.', 'warn');
-        }
-
+        
         S.user.journals = journals2;
         setSyncState('saved');
         if (notify) toast(auto ? 'Draft auto-saved.' : 'Journal saved!');
