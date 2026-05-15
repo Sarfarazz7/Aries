@@ -1248,7 +1248,6 @@ function calcTotals(txns) {
 }
 
 function getGoals() { const u = usr(); return u ? (u.savingsGoals || []) : []; }
-// FIX 1: always returns plain object — guards against Mongoose Map responses
 function getBudgets() { const u = usr(); return u ? toPlainObj(u.budgets) : {}; }
 
 // ── Finance Overview ───────────────────────────────────────
@@ -1256,17 +1255,51 @@ function renderFinOverview() {
     const u = usr();
     if (!u) return;
     const txns = u.transactions || [];
-    const { inc, exp, net } = calcTotals(txns);
     const hasData = txns.length > 0;
-    const savRate = inc > 0 ? Math.round(net / inc * 100) : 0;
-    const incTxCount = txns.filter(t => t.type === 'income').length;
-    const expTxCount = txns.filter(t => t.type === 'expense').length;
+
+    const now = new Date();
+    const curMonthKey = now.toISOString().slice(0, 7);
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthKey = lastMonthDate.toISOString().slice(0, 7);
+    const lastMonthName = lastMonthDate.toLocaleString('en-US', { month: 'long' });
+
+    const curMonthTxns = txns.filter(t => (t.date || '').startsWith(curMonthKey));
+    const lastMonthTxns = txns.filter(t => (t.date || '').startsWith(lastMonthKey));
+
+    const cur = calcTotals(curMonthTxns);
+    const last = calcTotals(lastMonthTxns);
+    
+    const curSavRate = cur.inc > 0 ? Math.round(cur.net / cur.inc * 100) : 0;
 
     const kpiDefs = [
-        { label: 'Total income', val: hasData ? fmtCurrency(inc) : '₹0', sub: hasData ? incTxCount + ' income entr' + (incTxCount === 1 ? 'y' : 'ies') : 'Add your first income →', pos: true, color: '#3b82f6', bg: isDk() ? '#0d2044' : '#eff6ff', icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4H9l3-3 3 3h-2v4z"/>' },
-        { label: 'Total expenses', val: hasData ? fmtCurrency(exp) : '₹0', sub: hasData ? expTxCount + ' expense entr' + (expTxCount === 1 ? 'y' : 'ies') : 'No expenses recorded yet', pos: false, color: '#ef4444', bg: isDk() ? '#2d0f0f' : '#fef2f2', icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4H9l3 3 3-3h-2v-4z"/>' },
-        { label: 'Net savings', val: hasData ? fmtCurrency(net) : '₹0', sub: hasData ? (net >= 0 ? savRate + '% savings rate' : 'Expenses exceed income') : 'Updates on first entry', pos: net >= 0, color: net >= 0 ? '#22c55e' : '#ef4444', bg: net >= 0 ? (isDk() ? '#0d2818' : '#f0fdf4') : (isDk() ? '#2d0f0f' : '#fef2f2'), icon: '<path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>' },
-        { label: 'Net worth', val: hasData ? fmtCurrency(net) : '₹0', sub: hasData ? (net >= 0 ? 'Income minus all expenses' : 'Review your spending') : 'Reflects your total net', pos: net >= 0, color: net >= 0 ? '#8b5cf6' : '#ef4444', bg: isDk() ? '#1e0d3d' : '#f5f3ff', icon: '<path d="M23 8c0 1.1-.9 2-2 2-.18 0-.35-.02-.51-.07l-3.56 3.55c.05.16.07.34.07.52 0 1.1-.9 2-2 2s-2-.9-2-2c0-.18.02-.36.07-.52l-2.55-2.55c-.16.05-.34.07-.52.07s-.36-.02-.52-.07l-4.55 4.56c.05.16.07.33.07.51 0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2c.18 0 .35.02.51.07l4.56-4.55C8.02 9.36 8 9.18 8 9c0-1.1.9-2 2-2s2 .9 2 2c0 .18-.02.36-.07.52l2.55 2.55c.16-.05.34-.07.52-.07s.36.02.52.07l3.55-3.56C19.02 8.35 19 8.18 19 8c0-1.1.9-2 2-2s2 .9 2 2z"/>' }
+        { 
+            label: 'Money In (This Month)', 
+            val: fmtCurrency(cur.inc), 
+            sub: `Total earnings for ${now.toLocaleString('en-US', { month: 'long' })}`, 
+            pos: true, color: '#3b82f6', bg: isDk() ? '#0d2044' : '#eff6ff', 
+            icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4H9l3-3 3 3h-2v4z"/>' 
+        },
+        { 
+            label: 'Money Out (This Month)', 
+            val: fmtCurrency(cur.exp), 
+            sub: `Total spending for ${now.toLocaleString('en-US', { month: 'long' })}`, 
+            pos: false, color: '#ef4444', bg: isDk() ? '#2d0f0f' : '#fef2f2', 
+            icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4H9l3-3 3-3h-2v-4z"/>' 
+        },
+        { 
+            label: 'Money Saved (This Month)', 
+            val: fmtCurrency(cur.net), 
+            sub: cur.net >= 0 ? `You've kept ${curSavRate}% of your money` : 'You spent more than you earned', 
+            pos: cur.net >= 0, color: cur.net >= 0 ? '#22c55e' : '#ef4444', bg: cur.net >= 0 ? (isDk() ? '#0d2818' : '#f0fdf4') : (isDk() ? '#2d0f0f' : '#fef2f2'), 
+            icon: '<path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>' 
+        },
+        { 
+            label: `Saved Last Month (${lastMonthName})`, 
+            val: fmtCurrency(last.net), 
+            sub: last.net >= 0 ? 'Your savings from last month' : 'Overspent last month', 
+            pos: last.net >= 0, color: '#8b5cf6', bg: isDk() ? '#1e0d3d' : '#f5f3ff', 
+            icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>' 
+        }
     ];
 
     const kpiRow = document.getElementById('kpiRow');
@@ -1398,21 +1431,18 @@ function renderFinOverview() {
     }
 
     const insights = [];
-    if (savRate >= 40) insights.push({ icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>', color: '#22c55e', bg: isDk() ? '#0d2818' : '#f0fdf4', title: 'Strong savings rate — ' + savRate + '%', body: 'You\'re saving ' + savRate + '% of your income. Keep it up!' });
-    else if (inc > 0) {
-        insights.push({ icon: '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>', color: '#f59e0b', bg: isDk() ? '#2e1e00' : '#fffbeb', title: 'Savings rate: ' + savRate + '%', body: 'Target 40% or more. Try reducing your top expense category.' });
-        const addCatBtn = document.getElementById('addCatBudgetBtn');
-        if (addCatBtn) addCatBtn.onclick = () => {
-            document.getElementById('bmCat').value = 'Food';
-            document.getElementById('bmAmt').value = '';
-            closeAllModals();
-            document.getElementById('budgetModal').classList.remove('H');
-        };
+    if (curSavRate >= 40) insights.push({ icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>', color: '#22c55e', bg: isDk() ? '#0d2818' : '#f0fdf4', title: 'Great saving this month!', body: 'You\'ve saved ' + curSavRate + '% of your income so far. Amazing!' });
+    else if (cur.inc > 0) {
+        insights.push({ icon: '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>', color: '#f59e0b', bg: isDk() ? '#2e1e00' : '#fffbeb', title: 'Savings check-up', body: 'You\'re saving ' + curSavRate + '% of your income. Can we hit 40%?' });
     }
-    if (net < 0) insights.push({ icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>', color: '#ef4444', bg: isDk() ? '#2d0f0f' : '#fef2f2', title: 'Spending exceeds income', body: 'You\'re spending ' + fmtCurrency(Math.abs(net)) + ' more than you earn.' });
-    const topCat = catKeys.sort((a, b) => catMap[b] - catMap[a])[0];
-    if (topCat) insights.push({ icon: '<path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>', color: '#3b82f6', bg: isDk() ? '#0d2044' : '#eff6ff', title: 'Top expense: ' + topCat, body: topCat + ' is ' + Math.round(catMap[topCat] / totalExpCat * 100) + '% of total spend (' + fmtCurrency(catMap[topCat]) + ')' });
-    insights.push({ icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>', color: '#8b5cf6', bg: isDk() ? '#1e0d3d' : '#f5f3ff', title: txns.length + ' transactions logged', body: 'Income ' + fmtCurrency(inc) + ' · Expenses ' + fmtCurrency(exp) + ' · Net ' + fmtCurrency(net) });
+    if (cur.net < 0) insights.push({ icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>', color: '#ef4444', bg: isDk() ? '#2d0f0f' : '#fef2f2', title: 'Spending Alert', body: 'You\'ve spent ' + fmtCurrency(Math.abs(cur.net)) + ' more than you earned this month.' });
+    
+    const catTxns = curMonthTxns.filter(t => t.type === 'expense');
+    const curCatMap = {};
+    catTxns.forEach(t => { curCatMap[t.cat] = (curCatMap[t.cat] || 0) + Math.abs(t.amt); });
+    const topCat = Object.keys(curCatMap).sort((a, b) => curCatMap[b] - curCatMap[a])[0];
+    if (topCat) insights.push({ icon: '<path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>', color: '#3b82f6', bg: isDk() ? '#0d2044' : '#eff6ff', title: 'Top spend: ' + topCat, body: 'You\'ve spent ' + fmtCurrency(curCatMap[topCat]) + ' on ' + topCat + ' this month.' });
+    insights.push({ icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>', color: '#8b5cf6', bg: isDk() ? '#1e0d3d' : '#f5f3ff', title: 'Monthly Summary', body: 'Income: ' + fmtCurrency(cur.inc) + ' · Spent: ' + fmtCurrency(cur.exp) + ' · Saved: ' + fmtCurrency(cur.net) });
 
     const overviewIns = document.getElementById('overviewInsights');
     if (overviewIns) overviewIns.innerHTML = insights.slice(0, 4).map((ins, i) => `<div class="ins-card2" style="animation-delay:${i * 60}ms"><div class="ins-icon2" style="background:${ins.bg}"><svg viewBox="0 0 24 24" style="fill:${ins.color}">${ins.icon}</svg></div><div><div class="ins-title2">${ins.title}</div><div class="ins-body2">${ins.body}</div></div></div>`).join('');
