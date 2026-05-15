@@ -2160,7 +2160,7 @@ async function saveCurrentJournalDraft({ auto = false, notify = false, requireCo
             journals2 = await API.Journals.update(existing.id, payload);
         } else {
             journals2 = await API.Journals.add({ ...payload, date: today() });
-            jState.editId = Array.isArray(journals2) && journals2.length ? journals2[journals2.length - 1]?.id : null;
+            jState.editId = Array.isArray(journals2) && journals2.length ? journals2[0]?.id : null;
         }
 
         S.user.journals = journals2;
@@ -2728,6 +2728,46 @@ function renderJournalEditorForm(wrap) {
         <button class="jef-tool-btn" data-cmd="insertUnorderedList" title="Bullet list">•</button>
         <button class="jef-tool-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
         <div class="jef-tool-sep"></div>
+        <div class="jef-dropdown" id="jFontDD">
+          <button class="jef-tool-btn jef-dd-trigger" id="jFontTrigger" type="button" title="Font family">
+            <span id="jFontLbl">Font</span><span class="jef-dd-caret">▾</span>
+          </button>
+          <div class="jef-dd-panel" id="jFontPanel">
+            <div class="jef-dd-header">Font Family</div>
+            <div class="jef-font-list">
+              ${[
+                { n: 'Inter', f: 'Inter, sans-serif' },
+                { n: 'Roboto', f: 'Roboto, sans-serif' },
+                { n: 'Open Sans', f: '"Open Sans", sans-serif' },
+                { n: 'Montserrat', f: 'Montserrat, sans-serif' },
+                { n: 'Lato', f: 'Lato, sans-serif' },
+                { n: 'Poppins', f: 'Poppins, sans-serif' },
+                { n: 'Nunito', f: 'Nunito, sans-serif' },
+                { n: 'Raleway', f: 'Raleway, sans-serif' },
+                { n: 'Ubuntu', f: 'Ubuntu, sans-serif' },
+                { n: 'Space Grotesk', f: '"Space Grotesk", sans-serif' },
+                { n: 'Syne', f: 'Syne, sans-serif' },
+                { n: 'Playfair Display', f: '"Playfair Display", serif' },
+                { n: 'Merriweather', f: 'Merriweather, serif' },
+                { n: 'Lora', f: 'Lora, serif' },
+                { n: 'PT Serif', f: '"PT Serif", serif' },
+                { n: 'Oswald', f: 'Oswald, sans-serif' },
+                { n: 'Dancing Script', f: '"Dancing Script", cursive' },
+                { n: 'Pacifico', f: 'Pacifico, cursive' },
+                { n: 'Caveat', f: 'Caveat, cursive' },
+                { n: 'Fira Code', f: '"Fira Code", monospace' },
+                { n: 'JetBrains Mono', f: '"JetBrains Mono", monospace' },
+                { n: 'Georgia', f: 'Georgia, serif' },
+                { n: 'System', f: 'system-ui, -apple-system, sans-serif' }
+              ].map(font => `
+                <button class="jef-font-opt" data-font='${font.f}' style="font-family: ${font.f}">
+                  ${font.n}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="jef-tool-sep"></div>
         <div class="jef-dropdown" id="jSizeDD">
           <button class="jef-tool-btn jef-dd-trigger" id="jSizeTrigger" type="button" title="Font size">
             <span id="jSizeLbl">Size</span><span class="jef-dd-caret">▾</span>
@@ -2880,6 +2920,17 @@ function renderJournalEditorForm(wrap) {
     });
     document.addEventListener('click', closeAllDD);
 
+    wrap.querySelectorAll('.jef-font-opt').forEach(opt => {
+        opt.addEventListener('mousedown', e => e.preventDefault());
+        opt.addEventListener('click', () => {
+            const font = opt.dataset.font;
+            runEditorCommand('fontName', font);
+            const lbl = wrap.querySelector('#jFontLbl');
+            if (lbl) lbl.textContent = opt.textContent.trim();
+            closeAllDD();
+        });
+    });
+
     const sizeLabels = { 1: 'Small', 2: 'Medium', 3: 'Normal', 4: 'Large', 5: 'X-Large', 6: 'Huge', 7: 'Display' };
     wrap.querySelectorAll('.jef-size-opt').forEach(opt => {
         opt.addEventListener('mousedown', e => e.preventDefault());
@@ -2904,6 +2955,17 @@ function renderJournalEditorForm(wrap) {
             closeAllDD();
         });
     });
+
+    const colorInp = wrap.querySelector('#jColorInp');
+    if (colorInp) {
+        colorInp.addEventListener('input', () => {
+            const color = colorInp.value;
+            runEditorCommand('foreColor', color);
+            const bar = wrap.querySelector('#jColorBar');
+            if (bar) bar.style.background = color;
+        });
+        colorInp.addEventListener('change', () => closeAllDD());
+    }
 
     wrap.querySelectorAll('.mood-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3039,13 +3101,13 @@ function renderJournalBookView(wrap, entry) {
     };
 
     wrap.querySelector('#jbvBack').addEventListener('click', () => { jState.mode = 'list'; jState.editId = null; renderJournalPage(); });
-    wrap.querySelector('#jbvEdit').addEventListener('click', () => { 
-        jState.mode = 'edit'; 
+    wrap.querySelector('#jbvEdit').addEventListener('click', () => {
+        jState.mode = 'edit';
         jState.editId = entry.id; // CRITICAL FIX: Set the ID!
-        jState.selMood = entry.mood || null; 
-        jState.selTags = [...(entry.tags || [])]; 
-        jState.selImages = [...(entry.images || [])]; 
-        renderJournalPage(); 
+        jState.selMood = entry.mood || null;
+        jState.selTags = [...(entry.tags || [])];
+        jState.selImages = [...(entry.images || [])];
+        renderJournalPage();
     });
 }
 
