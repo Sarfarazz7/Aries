@@ -75,6 +75,10 @@
         <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         Profile
       </button>
+      <button class="nb-btn ai-btn" data-pg="ai">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/></svg>
+        AI Mentor
+      </button>
     </div>
     <div class="nb-sep"></div>
     <div class="nb-r">
@@ -446,6 +450,53 @@
   <div id="pgProfile" class="page H">
   <div class="profile-card" id="profileCardRoot"></div>
 </div>
+  <div id="pgAI" class="page H">
+    <div class="ai-header">
+      <div class="ai-title-wrap">
+        <svg class="ai-title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/></svg>
+        <div>
+          <h2 class="ai-title">AI Growth Mentor</h2>
+          <div class="ai-sub">Personalized insights based on your journals, finances, and tasks.</div>
+        </div>
+      </div>
+      <button id="aiGenBtn" class="ai-gen-btn">
+        <span>Generate Analysis</span>
+      </button>
+    </div>
+    
+    <div id="aiEmptyState" class="ai-empty">
+      <div class="ai-empty-icon">✨</div>
+      <h3>Ready for your personalized insights?</h3>
+      <p>I will analyze your recent activity across Devnix and provide actionable guidance to help you grow.</p>
+    </div>
+
+    <div id="aiLoading" class="ai-loading H">
+      <div class="ai-spinner"></div>
+      <div>Analyzing your data...</div>
+    </div>
+
+    <div id="aiResults" class="ai-results H">
+      <div class="ai-card overall-card">
+        <h3 class="ai-card-title">💡 Overall Takeaway</h3>
+        <p id="aiOverall" class="ai-overall-text"></p>
+      </div>
+      
+      <div class="ai-grid">
+        <div class="ai-card">
+          <h3 class="ai-card-title">💰 Financial Insights</h3>
+          <ul id="aiFinancial" class="ai-list"></ul>
+        </div>
+        <div class="ai-card">
+          <h3 class="ai-card-title">📈 Productivity & Tasks</h3>
+          <ul id="aiProductivity" class="ai-list"></ul>
+        </div>
+        <div class="ai-card">
+          <h3 class="ai-card-title">🧠 Emotional Wellbeing</h3>
+          <ul id="aiEmotional" class="ai-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="toast-wrap" id="toastWrap"></div>
 </div>
 </div>
