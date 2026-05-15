@@ -1708,7 +1708,19 @@ td:hover .tip {
   animation: fadeUp .25s var(--ease)
 }
 
-.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .2s var(--ease)}
+.modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn .2s var(--ease)
+}
 
 .modal {
   background: var(--sf);
@@ -2536,7 +2548,16 @@ td:hover .tip {
   color: var(--tx)
 }
 
-.edit-modal{background:var(--sf);border-radius:14px;padding:26px;width:380px;box-shadow:0 12px 48px rgba(0,0,0,.3);animation:fadeUp .25s var(--ease);position:relative;z-index:1001}
+.edit-modal {
+  background: var(--sf);
+  border-radius: 14px;
+  padding: 26px;
+  width: 380px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .3);
+  animation: fadeUp .25s var(--ease);
+  position: relative;
+  z-index: 1001
+}
 
 .edit-modal h3 {
   font-size: 14px;
@@ -3289,8 +3310,9 @@ td:hover .tip {
   box-shadow: 0 8px 32px rgba(0, 0, 0, .15), 0 2px 8px rgba(0, 0, 0, .08);
   z-index: 100;
   min-width: 160px;
+  max-height: 400px;
+  overflow-y: auto;
   animation: fadeUp .2s var(--ease);
-  overflow: hidden
 }
 
 .jef-dd-panel.open {
@@ -3345,6 +3367,30 @@ td:hover .tip {
   font-weight: 500;
   margin-left: auto;
   padding-left: 12px
+}
+
+/* Font family options */
+.jef-font-opt {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--tx);
+  font-size: 14px;
+  transition: background .12s, color .12s;
+  border-bottom: 1px solid var(--bd)
+}
+
+.jef-font-opt:last-child {
+  border-bottom: none
+}
+
+.jef-font-opt:hover {
+  background: var(--pl);
+  color: var(--p)
 }
 
 /* Color trigger */
@@ -4662,8 +4708,16 @@ body {
   }
 
   /* Modal */
-  .modal, .edit-modal { width: calc(100vw - 32px) !important; max-width: 400px; padding: 20px 16px; }
-  .modal-bg { padding: 16px; }
+  .modal,
+  .edit-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: 400px;
+    padding: 20px 16px;
+  }
+
+  .modal-bg {
+    padding: 16px;
+  }
 
   /* Heatmap */
   .hm-grid {
@@ -4904,11 +4958,14 @@ body {
     border: 1px solid #ddd;
   }
 }
+
 /* -- Split Journal Layout (70/30) -------------------------- */
 .jef-split-body {
   display: grid !important;
-  grid-template-columns: 7fr 3fr !important; /* Force 70/30 Grid */
-  min-height: 600px;
+  grid-template-columns: 7fr 3fr !important;
+  /* Force 70/30 Grid */
+  flex: 1;
+  min-height: 0;
   background: var(--sf1);
   border-radius: 12px;
   overflow: hidden;
@@ -4986,9 +5043,9 @@ body {
 .jef-side-frame {
   padding: 12px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   transform: rotate(-1deg);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -4999,7 +5056,7 @@ body {
 
 .jef-side-frame:hover {
   transform: rotate(0) scale(1.05);
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   z-index: 100;
 }
 
@@ -5086,8 +5143,8 @@ body {
 .jbv-frame {
   padding: 15px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
   cursor: zoom-in;
   transition: transform 0.3s;
@@ -5132,7 +5189,7 @@ body {
   max-width: 100%;
   max-height: 85vh;
   border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .lb-close {
@@ -5151,9 +5208,12 @@ body {
   .jef-split-body {
     grid-template-columns: 100% !important;
   }
-  .jef-main-area, .jef-side-area {
+
+  .jef-main-area,
+  .jef-side-area {
     padding: 20px;
   }
+
   .jef-main-area {
     border-right: none;
     border-bottom: 1px solid var(--bd);
