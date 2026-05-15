@@ -223,7 +223,7 @@ document.querySelectorAll('.nb-btn').forEach(btn => {
         if (!(await saveCurrentJournalDraft())) return;
         document.querySelectorAll('.nb-btn').forEach(b => b.classList.remove('on'));
         btn.classList.add('on');
-        ['pgDashboard', 'pgFinance', 'pgJournal', 'pgProfile'].forEach(id => {
+        ['pgDashboard', 'pgFinance', 'pgJournal', 'pgProfile', 'pgAI'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('H');
         });
@@ -238,9 +238,12 @@ document.querySelectorAll('.nb-btn').forEach(btn => {
             document.getElementById('pgJournal').classList.remove('H');
             jState = { mode: 'list', tab: 'entries', editId: null, selMood: null, selTags: [], selImages: [], searchQ: '' };
             renderJournalPage();
-        } else {
+        } else if (pg === 'profile') {
             document.getElementById('pgProfile').classList.remove('H');
             renderProfile();
+        } else if (pg === 'ai') {
+            document.getElementById('pgAI').classList.remove('H');
+            if (typeof renderAIPage === 'function') renderAIPage();
         }
     });
 });
@@ -3659,6 +3662,71 @@ function mountApp() {
         };
     });
 })();
+// ── AI Mentor Page ─────────────────────────────────────────
+function renderAIPage() {
+    const genBtn = document.getElementById('aiGenBtn');
+    if (!genBtn) return;
+    
+    // Only bind once
+    if (!genBtn.dataset.bound) {
+        genBtn.dataset.bound = 'true';
+        genBtn.addEventListener('click', async () => {
+            const emptyState = document.getElementById('aiEmptyState');
+            const loading = document.getElementById('aiLoading');
+            const results = document.getElementById('aiResults');
+            
+            emptyState.classList.add('H');
+            results.classList.add('H');
+            loading.classList.remove('H');
+            genBtn.disabled = true;
+            genBtn.innerHTML = '<div class="ai-spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px"></div> Analyzing...';
+            
+            try {
+                const insights = await API.AI.getInsights();
+                
+                // Populate DOM
+                document.getElementById('aiOverall').textContent = insights.overall_advice || "Keep up the great work!";
+                
+                const finList = document.getElementById('aiFinancial');
+                finList.innerHTML = '';
+                (insights.financial_insights || []).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    finList.appendChild(li);
+                });
+                
+                const prodList = document.getElementById('aiProductivity');
+                prodList.innerHTML = '';
+                (insights.productivity_insights || []).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    prodList.appendChild(li);
+                });
+                
+                const emoList = document.getElementById('aiEmotional');
+                emoList.innerHTML = '';
+                (insights.emotional_wellbeing || []).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    emoList.appendChild(li);
+                });
+                
+                loading.classList.add('H');
+                results.classList.remove('H');
+                toast('Analysis complete!');
+            } catch (err) {
+                loading.classList.add('H');
+                emptyState.classList.remove('H');
+                toast(err.message || 'Failed to generate insights', 'error');
+                console.error(err);
+            } finally {
+                genBtn.disabled = false;
+                genBtn.innerHTML = '<span>Generate Analysis</span>';
+            }
+        });
+    }
+}
+
 // ── Keep backend alive ─────────────────────────────────────
 setInterval(async () => {
     try { await fetch('https://devnix-backend.onrender.com/api/health'); } catch (e) { }
