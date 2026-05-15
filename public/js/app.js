@@ -2844,23 +2844,28 @@ function renderJournalEditorForm(wrap) {
     }
 
     const wc = wrap.querySelector('#jWC');
+    const toolbarButtons = wrap.querySelectorAll('.jef-tool-btn[data-cmd]');
     let typingFxTimer = null;
     let savedRange = null;
 
     const playTypingFx = () => {
+        if (isExecutingPreview) return;
+        bodyInp.classList.remove('typing');
+        void bodyInp.offsetWidth; // Only once on the main area
         bodyInp.classList.add('typing');
-        wc.classList.remove('pulse');
-        void wc.offsetWidth;
-        wc.classList.add('pulse');
         clearTimeout(typingFxTimer);
         typingFxTimer = setTimeout(() => bodyInp.classList.remove('typing'), 700);
     };
 
+    let wcDebounce = null;
     const updateWC = () => {
         if (isExecutingPreview) return;
-        const text = bodyInp.textContent || '';
-        const words = ((text.trim().match(/\S+/g)) || []).length;
-        wc.textContent = words + ' word' + (words !== 1 ? 's' : '');
+        clearTimeout(wcDebounce);
+        wcDebounce = setTimeout(() => {
+            const text = bodyInp.textContent || '';
+            const words = ((text.trim().match(/\S+/g)) || []).length;
+            if (wc) wc.textContent = words + ' word' + (words !== 1 ? 's' : '');
+        }, 100);
     };
 
     bodyInp.addEventListener('input', () => {
@@ -2886,12 +2891,16 @@ function renderJournalEditorForm(wrap) {
         sel.removeAllRanges();
         sel.addRange(savedRange);
     };
+    let toolbarDebounce = null;
     const refreshToolbarState = () => {
-        wrap.querySelectorAll('.jef-tool-btn[data-cmd]').forEach(btn => {
-            let on = false;
-            try { on = document.queryCommandState(btn.dataset.cmd); } catch (e) { on = false; }
-            btn.classList.toggle('active', !!on);
-        });
+        clearTimeout(toolbarDebounce);
+        toolbarDebounce = setTimeout(() => {
+            toolbarButtons.forEach(btn => {
+                let on = false;
+                try { on = document.queryCommandState(btn.dataset.cmd); } catch (e) { on = false; }
+                btn.classList.toggle('active', !!on);
+            });
+        }, 50);
     };
     const runEditorCommand = (cmd, value, isPreview = false) => {
         if (isPreview) isExecutingPreview = true;
@@ -2918,7 +2927,7 @@ function renderJournalEditorForm(wrap) {
         });
     });
 
-    function closeAllDD() { wrap.querySelectorAll('.jef-dd-panel').forEach(p => p.classList.remove('open')); }
+    function closeAllDD() { document.querySelectorAll('.jef-dd-panel').forEach(p => p.classList.remove('open')); }
     wrap.querySelectorAll('.jef-dd-trigger').forEach(trigger => {
         trigger.addEventListener('mousedown', e => e.preventDefault());
         trigger.addEventListener('click', e => {
@@ -2929,8 +2938,7 @@ function renderJournalEditorForm(wrap) {
             if (!wasOpen) panel.classList.add('open');
         });
     });
-    document.removeEventListener('click', closeAllDD); // Avoid multiple listeners
-    document.addEventListener('click', closeAllDD);
+    // Click listener moved to global boot or handled via delegation
 
     let originalFont = '';
     let previewTimer = null;
@@ -3643,6 +3651,11 @@ function mountApp() {
     setTimeout(() => renderDisciplineAnalytics(), 800);
     setTimeout(() => renderCommandCenter(), 1200);
     setSyncState('saved');
+
+    // Global DD close
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.jef-dd-panel.open').forEach(p => p.classList.remove('open'));
+    });
 }
 
 // ── Modal buttons wired once at startup ───────────────────
