@@ -2897,9 +2897,9 @@ function renderJournalEditorForm(wrap) {
         if (isPreview) isExecutingPreview = true;
         restoreSelection();
         document.execCommand(cmd, false, value ?? null);
-        if (isPreview) isExecutingPreview = false;
-
-        if (!isPreview) {
+        if (isPreview) {
+            isExecutingPreview = false;
+        } else {
             bodyInp.focus();
             saveSelection();
             refreshToolbarState();
@@ -2929,6 +2929,7 @@ function renderJournalEditorForm(wrap) {
             if (!wasOpen) panel.classList.add('open');
         });
     });
+    document.removeEventListener('click', closeAllDD); // Avoid multiple listeners
     document.addEventListener('click', closeAllDD);
 
     let originalFont = '';
@@ -2948,7 +2949,7 @@ function renderJournalEditorForm(wrap) {
             clearTimeout(previewTimer);
             previewTimer = setTimeout(() => {
                 runEditorCommand('fontName', opt.dataset.font, true);
-            }, 80); // Increased debounce for stability
+            }, 30); // Faster response
         });
 
         opt.addEventListener('click', () => {
@@ -2988,7 +2989,7 @@ function renderJournalEditorForm(wrap) {
             clearTimeout(previewTimer);
             previewTimer = setTimeout(() => {
                 runEditorCommand('fontSize', opt.dataset.fsize, true);
-            }, 80);
+            }, 30);
         });
 
         opt.addEventListener('click', () => {
@@ -3034,7 +3035,7 @@ function renderJournalEditorForm(wrap) {
             clearTimeout(previewTimer);
             previewTimer = setTimeout(() => {
                 runEditorCommand('foreColor', sw.dataset.color, true);
-            }, 80);
+            }, 30);
         });
 
         sw.addEventListener('click', () => {
