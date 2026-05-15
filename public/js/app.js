@@ -1559,65 +1559,27 @@ function refreshAnalyticsCharts(txns) {
         if (finCharts.cashFlow) {
             finCharts.cashFlow.data.labels = monthLabels;
             finCharts.cashFlow.data.datasets[0].data = cashFlow;
-            finCharts.cashFlow.data.datasets[0].backgroundColor = cashFlow.map(v => v >= 0 ? (isDk() ? '#166534' : '#22c55e') : (isDk() ? '#991b1b' : '#ef4444'));
+            finCharts.cashFlow.data.datasets[0].backgroundColor = cashFlow.map(v => v >= 0 ? '#22c55e' : '#ef4444');
             finCharts.cashFlow.update({ duration: 700 });
         } else {
             destroyFinChart('cashFlow');
             finCharts.cashFlow = new Chart(cfEl, {
                 type: 'bar',
-                data: { labels: monthLabels, datasets: [{ label: 'Cash flow', data: cashFlow, backgroundColor: cashFlow.map(v => v >= 0 ? (isDk() ? '#166534' : '#22c55e') : (isDk() ? '#991b1b' : '#ef4444')), borderRadius: 5, borderSkipped: false }] },
-                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 }, color: tcFn() }, grid: { display: false } }, y: { ticks: { callback: v => (v >= 0 ? '$' : '-$') + Math.abs(v / 1000).toFixed(1) + 'k', font: { size: 10 }, color: tcFn() }, grid: { color: gcFn() } } } }
+                data: { labels: monthLabels, datasets: [{ label: 'Monthly Profit/Loss', data: cashFlow, backgroundColor: cashFlow.map(v => v >= 0 ? '#22c55e' : '#ef4444'), borderRadius: 6, borderSkipped: false }] },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    animation: { duration: 700 }, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { ticks: { font: { size: 10 }, color: tcFn() }, grid: { display: false } }, 
+                        y: { ticks: { callback: v => fmtCurrency(v), font: { size: 10 }, color: tcFn() }, grid: { color: gcFn() } } 
+                    } 
+                }
             });
         }
     }
 
     renderSavingsGoals(txns);
-
-    // Forecast chart
-    const last6 = cashFlow.slice(-6), avg6 = last6.length ? last6.reduce((a, b) => a + b, 0) / last6.length : 0;
-    const lastNW = nwData[nwData.length - 1] || 0, fLabels = [];
-    for (let i = 1; i <= 6; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        fLabels.push(d.toLocaleString('en-US', { month: 'short' }));
-    }
-    const forecastNW = fLabels.map((_, i) => Math.round(lastNW + (avg6 * (i + 1))));
-    const forecastSav = fLabels.map(() => Math.round(avg6));
-    const allFL = [...monthLabels.slice(-3), ...fLabels];
-    const fcEl = document.getElementById('forecastCh');
-    if (fcEl) {
-        if (finCharts.forecast) {
-            finCharts.forecast.data.labels = allFL;
-            finCharts.forecast.data.datasets[0].data = [...nwData.slice(-3), ...Array(6).fill(null)];
-            finCharts.forecast.data.datasets[1].data = [...Array(2).fill(null), nwData[nwData.length - 1], ...forecastNW];
-            finCharts.forecast.data.datasets[2].data = [...Array(3).fill(null), ...forecastSav];
-            finCharts.forecast.update({ duration: 700 });
-        } else {
-            destroyFinChart('forecast');
-            finCharts.forecast = new Chart(fcEl, {
-                type: 'line',
-                data: {
-                    labels: allFL,
-                    datasets: [
-                        { label: 'Net worth (actual)', data: [...nwData.slice(-3), ...Array(6).fill(null)], borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 3, tension: .3, backgroundColor: 'transparent' },
-                        { label: 'Net worth (forecast)', data: [...Array(2).fill(null), nwData[nwData.length - 1], ...forecastNW], borderColor: '#8b5cf6', borderWidth: 2, borderDash: [6, 4], pointRadius: 3, tension: .3, backgroundColor: 'rgba(139,92,246,.06)', fill: true },
-                        { label: 'Monthly savings', data: [...Array(3).fill(null), ...forecastSav], borderColor: '#22c55e', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 2, tension: .3, backgroundColor: 'transparent', yAxisID: 'y1' }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, animation: { duration: 800 }, plugins: { legend: { display: false } },
-                    scales: {
-                        x: { ticks: { font: { size: 10 }, color: tcFn() }, grid: { display: false } },
-                        y: { ticks: { callback: v => (v >= 0 ? '$' : '-$') + Math.abs(v / 1000).toFixed(1) + 'k', font: { size: 10 }, color: tcFn() }, grid: { color: gcFn() } },
-                        y1: { position: 'right', ticks: { callback: v => '$' + v / 1000 + 'k', font: { size: 10 }, color: '#22c55e' }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-    }
-    const forecastSub = document.getElementById('forecastSub');
-    if (forecastSub) forecastSub.textContent = avg6 >= 0
-        ? `Avg monthly savings: $${Math.round(avg6).toLocaleString()} · projected over 6 months`
-        : `Avg monthly deficit: -$${Math.abs(Math.round(avg6)).toLocaleString()} · review your spending`;
 }
 
 function renderSavingsGoals(txns) {
