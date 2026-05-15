@@ -2075,7 +2075,9 @@ function stripTags(html) {
     return tmp.textContent || tmp.innerText || '';
 }
 
+let isExecutingPreview = false;
 function scheduleJournalAutoSave() {
+    if (isExecutingPreview) return;
     clearTimeout(journalAutoSaveTimer);
     journalAutoSaveTimer = setTimeout(() => saveCurrentJournalDraft({ auto: true }), 1200);
 }
@@ -2888,9 +2890,14 @@ function renderJournalEditorForm(wrap) {
         });
     };
     const runEditorCommand = (cmd, value, isPreview = false) => {
+        if (isPreview) isExecutingPreview = true;
         restoreSelection();
         document.execCommand(cmd, false, value ?? null);
-        if (!isPreview) {
+        if (isPreview) isExecutingPreview = false;
+
+        if (isPreview) {
+            bodyInp.focus({ preventScroll: true });
+        } else {
             bodyInp.focus();
             saveSelection();
             refreshToolbarState();
@@ -3007,11 +3014,14 @@ function renderJournalEditorForm(wrap) {
     const colorTrigger = wrap.querySelector('#jColorTrigger');
     if (colorTrigger) {
         colorTrigger.addEventListener('mousedown', () => {
-            originalColor = document.queryCommandValue('foreColor');
-            // If it returns a number (old IE/Webkit), convert or handle it
-            if (typeof originalColor === 'number') {
-                originalColor = '#' + originalColor.toString(16).padStart(6, '0');
+            let col = document.queryCommandValue('foreColor');
+            if (!col || col === 'rgba(0, 0, 0, 0)' || col === 'transparent') {
+                col = window.getComputedStyle(bodyInp).color;
             }
+            if (typeof col === 'number') {
+                col = '#' + col.toString(16).padStart(6, '0');
+            }
+            originalColor = col;
         });
     }
 
